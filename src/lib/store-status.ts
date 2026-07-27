@@ -1,12 +1,10 @@
 "use client";
 
+import { getBackendRootUrl } from "@/lib/media-url";
+
 export interface ManualStoreClosure {
   is_open: boolean;
   reason?: string;
-}
-
-function getBackendRootUrl(): string {
-  return process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? "";
 }
 
 /**
