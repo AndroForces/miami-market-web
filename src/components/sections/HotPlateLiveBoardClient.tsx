@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo } from "react";
 import {
   findCurrentMonthKey,
   groupHotPlateByWeek,
@@ -10,6 +10,7 @@ import {
   parseIndianPlateItems,
   resolveDayPrice,
   sortMonthsChronologically,
+  weekdayColumn,
   type HotPlateDayWithMeta,
   type HotPlateMonth,
   type HotPlateWeekGroup,
@@ -72,19 +73,19 @@ function MealCard({
   const price = resolveDayPrice(day, month, defaultPrice);
 
   return (
-    <article className="group flex h-full w-[240px] shrink-0 flex-col rounded-[20px] border border-green-dark/8 bg-white p-3 shadow-[0_8px_32px_-16px_rgba(20,61,34,0.12),0_2px_8px_-4px_rgba(20,61,34,0.06)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_48px_-20px_rgba(20,61,34,0.2)] sm:w-[260px]">
-      <div className="mb-2">
+    <article className="group flex h-full w-full min-w-0 flex-col rounded-[18px] border border-green-dark/8 bg-white p-2.5 shadow-[0_8px_32px_-16px_rgba(20,61,34,0.12),0_2px_8px_-4px_rgba(20,61,34,0.06)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_48px_-20px_rgba(20,61,34,0.2)]">
+      <div className="mb-1.5">
         <span className="font-bricolage text-[10px] font-bold tracking-[0.14em] text-text-muted-2 uppercase">
           {weekdayBadge(day)}
         </span>
       </div>
 
       <div className="flex-1">
-        <h3 className="font-playfair text-[16px] leading-snug font-bold text-green-dark">
+        <h3 className="font-playfair text-[15px] leading-snug font-bold text-green-dark">
           {parsed.title}
         </h3>
         {parsed.sides.length > 0 && (
-          <ul className="mt-1 space-y-0">
+          <ul className="mt-0.5 space-y-0">
             {parsed.sides.map((side) => (
               <li
                 key={side}
@@ -96,13 +97,13 @@ function MealCard({
           </ul>
         )}
         {price && (
-          <p className="mt-1 font-hanken text-[11px] font-semibold text-text-muted-2">
+          <p className="mt-0.5 font-hanken text-[11px] font-semibold text-text-muted-2">
             {price}
           </p>
         )}
       </div>
 
-      <div className="mt-2 border-t border-green-dark/6 pt-2">
+      <div className="mt-1.5 border-t border-green-dark/6 pt-1.5">
         <span className="inline-flex items-center gap-1 rounded-full bg-green-open/12 px-2.5 py-1 font-bricolage text-[10px] font-bold text-green-dark">
           <span className="h-1.5 w-1.5 rounded-full bg-green-open" aria-hidden />
           Available
@@ -125,19 +126,19 @@ function IndianSpecialCard({
   const price = resolveDayPrice(day, month, defaultPrice);
 
   return (
-    <article className="group relative flex h-full w-[240px] shrink-0 flex-col overflow-hidden rounded-[20px] border border-purple-900/20 bg-gradient-to-br from-[#4a1d6a] via-[#5c2780] to-[#3d1658] p-3 shadow-[0_12px_40px_-16px_rgba(74,29,106,0.55)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_56px_-20px_rgba(74,29,106,0.65)] sm:w-[260px]">
+    <article className="group relative flex h-full w-full min-w-0 flex-col overflow-hidden rounded-[18px] border border-purple-900/20 bg-gradient-to-br from-[#4a1d6a] via-[#5c2780] to-[#3d1658] p-2.5 shadow-[0_12px_40px_-16px_rgba(74,29,106,0.55)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_56px_-20px_rgba(74,29,106,0.65)]">
       <div
         className="pointer-events-none absolute -top-8 -right-8 h-32 w-32 rounded-full bg-gold/15 blur-2xl"
         aria-hidden
       />
-      <div className="mb-2">
-        <span className="font-bricolage text-[11px] font-bold tracking-[0.14em] text-white/70 uppercase">
+      <div className="mb-1.5">
+        <span className="font-bricolage text-[10px] font-bold tracking-[0.14em] text-white/70 uppercase">
           {weekdayBadge(day)}
         </span>
       </div>
 
-      <div className="mb-2 flex items-center gap-2">
-        <svg className="h-4 w-4 text-gold" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <div className="mb-1.5 flex items-center gap-1.5">
+        <svg className="h-3.5 w-3.5 text-gold" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
           <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" />
         </svg>
         <span className="font-bricolage text-[10px] font-extrabold tracking-[0.18em] text-gold uppercase">
@@ -146,25 +147,25 @@ function IndianSpecialCard({
       </div>
 
       <div className="min-w-0 flex-1">
-        <h3 className="font-playfair text-[16px] leading-snug font-bold text-white">
+        <h3 className="font-playfair text-[15px] leading-snug font-bold text-white">
           {parsed.title}
         </h3>
         {parsed.sides.map((side) => (
           <p
             key={side}
-            className="mt-1 font-hanken text-[11px] leading-snug text-white/65"
+            className="mt-0.5 font-hanken text-[11px] leading-snug text-white/65"
           >
             {side}
           </p>
         ))}
         {price && (
-          <p className="mt-1 font-hanken text-[11px] font-semibold text-gold/90">
+          <p className="mt-0.5 font-hanken text-[11px] font-semibold text-gold/90">
             {price}
           </p>
         )}
       </div>
 
-      <div className="mt-2 border-t border-white/10 pt-2">
+      <div className="mt-1.5 border-t border-white/10 pt-1.5">
         <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 font-bricolage text-[10px] font-bold text-white">
           <svg className="h-3 w-3 text-gold" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
             <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" />
@@ -180,7 +181,7 @@ function HolidayCard({ day }: { day: HotPlateDayWithMeta }) {
   const parsed = parseClosedDayMessage(day.items);
 
   return (
-    <article className="relative flex h-full w-[280px] shrink-0 flex-col overflow-hidden rounded-[20px] border border-accent/20 bg-gradient-to-br from-accent via-[#c0392b] to-[#8b1a1a] p-4 shadow-[0_16px_48px_-20px_rgba(210,69,42,0.55)] sm:w-[300px] sm:p-5">
+    <article className="relative flex h-full w-full min-w-0 flex-col overflow-hidden rounded-[18px] border border-accent/20 bg-gradient-to-br from-accent via-[#c0392b] to-[#8b1a1a] p-2.5 shadow-[0_16px_48px_-20px_rgba(210,69,42,0.55)]">
       <div
         className="pointer-events-none absolute inset-0 opacity-30"
         style={{
@@ -190,20 +191,20 @@ function HolidayCard({ day }: { day: HotPlateDayWithMeta }) {
         }}
         aria-hidden
       />
-      <div className="relative flex flex-1 flex-col gap-3">
+      <div className="relative flex flex-1 flex-col gap-2">
         <div>
           <span className="font-bricolage text-[10px] font-bold tracking-[0.14em] text-white/75 uppercase">
             {weekdayBadge(day)}
           </span>
-          <h3 className="mt-1 font-playfair text-[20px] font-bold text-white sm:text-[22px]">
+          <h3 className="mt-0.5 font-playfair text-[18px] font-bold text-white sm:text-[19px]">
             {parsed.headline}
           </h3>
-          <p className="mt-1 font-bricolage text-[14px] font-extrabold tracking-wide text-white uppercase sm:text-[16px]">
+          <p className="mt-0.5 font-bricolage text-[13px] font-extrabold tracking-wide text-white uppercase sm:text-[14px]">
             {parsed.deliStatus}
           </p>
         </div>
-        <div className="mt-auto rounded-[16px] border border-white/20 bg-white/10 px-4 py-3 backdrop-blur-sm">
-          <p className="font-hanken text-[13px] font-semibold leading-snug text-white">
+        <div className="mt-auto rounded-[14px] border border-white/20 bg-white/10 px-3 py-2 backdrop-blur-sm">
+          <p className="font-hanken text-[12px] font-semibold leading-snug text-white">
             {parsed.hoursLine}
           </p>
         </div>
@@ -235,19 +236,19 @@ function DayCard({
 function WeekHeaderCard({ week }: { week: HotPlateWeekGroup }) {
   return (
     <div
-      className={`flex shrink-0 flex-row items-center gap-3 rounded-[20px] border border-green-dark/8 bg-cream-paper px-4 py-3 shadow-[0_8px_32px_-16px_rgba(20,61,34,0.1)] lg:w-[168px] lg:flex-col lg:items-start lg:gap-2 lg:px-4 lg:py-4 ${
+      className={`flex shrink-0 flex-row items-center gap-2.5 rounded-[18px] border border-green-dark/8 bg-cream-paper px-3 py-2.5 shadow-[0_8px_32px_-16px_rgba(20,61,34,0.1)] lg:w-[132px] lg:flex-col lg:items-start lg:gap-1.5 lg:px-3 lg:py-3 ${
         week.isCurrentWeek ? "ring-2 ring-green/25 ring-offset-1 ring-offset-cream" : ""
       }`}
     >
       <div>
-        <span className="font-bricolage text-[11px] font-extrabold tracking-[0.2em] text-text-muted-2 uppercase">
+        <span className="font-bricolage text-[10px] font-extrabold tracking-[0.2em] text-text-muted-2 uppercase">
           Week {week.weekNumber}
         </span>
-        <p className="mt-1 font-playfair text-[16px] leading-tight font-bold text-green-dark">
+        <p className="mt-0.5 font-playfair text-[14px] leading-tight font-bold text-green-dark">
           {week.dateRange}
         </p>
       </div>
-      <span className="rounded-full bg-green-dark px-2.5 py-1 font-bricolage text-[9px] font-extrabold tracking-[0.12em] text-cream uppercase">
+      <span className="rounded-full bg-green-dark px-2 py-0.5 font-bricolage text-[9px] font-extrabold tracking-[0.12em] text-cream uppercase">
         {week.dayCount} {week.dayCount === 1 ? "Day" : "Days"}
       </span>
     </div>
@@ -263,54 +264,34 @@ function WeekSection({
   month: HotPlateMonth;
   defaultPrice: string;
 }) {
-  const scrollerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return;
-
-    function handleWheel(event: WheelEvent) {
-      if (!scroller) return;
-
-      const delta =
-        Math.abs(event.deltaX) > Math.abs(event.deltaY)
-          ? event.deltaX
-          : event.deltaY;
-
-      if (delta === 0) return;
-
-      const atStart = scroller.scrollLeft <= 0;
-      const atEnd =
-        scroller.scrollLeft + scroller.clientWidth >= scroller.scrollWidth - 1;
-      const scrollingLeft = delta < 0;
-      const scrollingRight = delta > 0;
-
-      if ((scrollingLeft && atStart) || (scrollingRight && atEnd)) {
-        return;
-      }
-
-      event.preventDefault();
-      scroller.scrollLeft += delta;
-    }
-
-    scroller.addEventListener("wheel", handleWheel, { passive: false });
-    return () => scroller.removeEventListener("wheel", handleWheel);
-  }, []);
+  // Always Mon–Sat columns so every week uses the same card width.
+  const columns = Array.from({ length: 6 }, () => [] as HotPlateDayWithMeta[]);
+  for (const day of week.days) {
+    const col = weekdayColumn(new Date(month.year, month.month - 1, day.day));
+    if (col < 0) continue;
+    columns[col].push(day);
+  }
 
   return (
-    <section className="flex flex-col gap-3 lg:flex-row lg:items-stretch lg:gap-5">
+    <section className="flex flex-col gap-3 lg:flex-row lg:items-stretch lg:gap-3">
       <WeekHeaderCard week={week} />
-      <div
-        ref={scrollerRef}
-        className="nav-scroll-hide -mx-1 flex min-w-0 flex-1 snap-x snap-mandatory items-stretch gap-2.5 overflow-x-auto px-1 lg:gap-3"
-      >
-        {week.days.map((day) => (
-          <div key={day.entryKey} className="flex snap-start">
-            <DayCard
-              day={day}
-              month={month}
-              defaultPrice={defaultPrice}
-            />
+      <div className="grid min-w-0 flex-1 grid-cols-2 items-stretch gap-2 sm:grid-cols-3 md:grid-cols-6 md:gap-2.5">
+        {columns.map((entries, colIndex) => (
+          <div
+            key={`col-${colIndex}`}
+            className={`flex min-w-0 flex-col gap-2 ${
+              entries.length === 0 ? "hidden md:flex" : ""
+            }`}
+          >
+            {entries.map((day) => (
+              <div key={day.entryKey} className="flex min-h-0 min-w-0 flex-1">
+                <DayCard
+                  day={day}
+                  month={month}
+                  defaultPrice={defaultPrice}
+                />
+              </div>
+            ))}
           </div>
         ))}
       </div>

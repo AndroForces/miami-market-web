@@ -206,7 +206,7 @@ function withResolvedMediaUrls(content: WebsiteContent): WebsiteContent {
 /** No fallback data — a failed fetch throws and fails the render. */
 export async function getWebsiteContent(): Promise<WebsiteContent> {
   const res = await fetch(`${getBackendUrl()}/api/v1/web/website-content`, {
-    next: { revalidate: 300 },
+    next: { revalidate: 60 },
   });
 
   if (!res.ok) {
@@ -220,7 +220,7 @@ export async function getWebsiteContent(): Promise<WebsiteContent> {
 /** Monthly Hot Plate day calendar — separate from the aggregate payload. */
 export async function getHotPlateCalendar(): Promise<HotPlateMonth[]> {
   const res = await fetch(`${getBackendUrl()}/api/v1/web/hot-plate-calendar`, {
-    next: { revalidate: 300 },
+    next: { revalidate: 60 },
   });
 
   if (!res.ok) {
@@ -233,7 +233,7 @@ export async function getHotPlateCalendar(): Promise<HotPlateMonth[]> {
 
 export async function getSiteSettingsForMetadata(): Promise<SiteSettingsContent> {
   const res = await fetch(`${getBackendUrl()}/api/v1/web/site-settings`, {
-    next: { revalidate: 300 },
+    next: { revalidate: 60 },
   });
 
   if (!res.ok) {
