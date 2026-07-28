@@ -76,7 +76,15 @@ export function resolveDayPrice(
   return formatHotPlatePrice(raw);
 }
 
-export type WeekdayFilter = "all" | "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat";
+export type WeekdayFilter =
+  | "all"
+  | "Mon"
+  | "Tue"
+  | "Wed"
+  | "Thu"
+  | "Fri"
+  | "Sat"
+  | "Sun";
 export type KindFilter = "all" | "indian" | "regular";
 
 export function filterHotPlateDays(
@@ -106,10 +114,10 @@ export function findCurrentMonthKey(
   return match ? monthKey(match) : monthKey(months[0]);
 }
 
-/** Column index for Mon–Sat grid (Mon = 0, Sat = 5). Returns -1 for Sunday. */
+/** Column index for Mon–Sun grid (Mon = 0 … Sat = 5, Sun = 6). */
 export function weekdayColumn(date: Date): number {
   const day = date.getDay();
-  if (day === 0) return -1;
+  if (day === 0) return 6;
   return day - 1;
 }
 
@@ -131,7 +139,17 @@ export type CalendarCell =
 
 export type CalendarRow = CalendarCell[];
 
-const WEEKDAY_LABELS = ["Mon", "Tues", "Wed", "Thurs", "Fri", "Sat"] as const;
+const WEEKDAY_LABELS = [
+  "Mon",
+  "Tues",
+  "Wed",
+  "Thurs",
+  "Fri",
+  "Sat",
+  "Sun",
+] as const;
+
+const WEEKDAY_COLUMN_COUNT = WEEKDAY_LABELS.length;
 
 export function buildHotPlateGrid(month: HotPlateMonth): {
   weekdayLabels: readonly string[];
@@ -148,7 +166,6 @@ export function buildHotPlateGrid(month: HotPlateMonth): {
 
   for (let day = 1; day <= lastDay; day += 1) {
     const wcol = weekdayColumn(new Date(year, monthNum - 1, day));
-    if (wcol === -1) continue;
 
     if (prevCol !== -1 && wcol <= prevCol) {
       row += 1;
@@ -167,7 +184,7 @@ export function buildHotPlateGrid(month: HotPlateMonth): {
   const rows: CalendarRow[] = [];
   for (let r = 0; r <= row; r += 1) {
     const calendarRow: CalendarCell[] = [];
-    for (let c = 0; c < 6; c += 1) {
+    for (let c = 0; c < WEEKDAY_COLUMN_COUNT; c += 1) {
       if (r === 0 && c === 0 && leadingBanner && firstCol > 0) {
         calendarRow.push({
           type: "banner",
@@ -438,7 +455,6 @@ export function groupHotPlateByWeek(
   for (let day = 1; day <= lastDay; day += 1) {
     const date = new Date(year, monthNum - 1, day);
     const wcol = weekdayColumn(date);
-    if (wcol === -1) continue;
 
     if (currentWeek.length > 0 && wcol === 0) {
       flushWeek();

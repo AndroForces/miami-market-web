@@ -80,8 +80,8 @@ function MealCard({
         </span>
       </div>
 
-      <div className="flex-1">
-        <h3 className="font-playfair text-[15px] leading-snug font-bold text-green-dark">
+      <div className="min-w-0 flex-1">
+        <h3 className="font-playfair text-[15px] leading-snug font-bold break-words text-green-dark [overflow-wrap:anywhere]">
           {parsed.title}
         </h3>
         {parsed.sides.length > 0 && (
@@ -147,7 +147,7 @@ function IndianSpecialCard({
       </div>
 
       <div className="min-w-0 flex-1">
-        <h3 className="font-playfair text-[15px] leading-snug font-bold text-white">
+        <h3 className="font-playfair text-[15px] leading-snug font-bold break-words text-white [overflow-wrap:anywhere]">
           {parsed.title}
         </h3>
         {parsed.sides.map((side) => (
@@ -191,20 +191,20 @@ function HolidayCard({ day }: { day: HotPlateDayWithMeta }) {
         }}
         aria-hidden
       />
-      <div className="relative flex flex-1 flex-col gap-2">
-        <div>
+      <div className="relative flex min-w-0 flex-1 flex-col gap-2">
+        <div className="min-w-0">
           <span className="font-bricolage text-[10px] font-bold tracking-[0.14em] text-white/75 uppercase">
             {weekdayBadge(day)}
           </span>
-          <h3 className="mt-0.5 font-playfair text-[18px] font-bold text-white sm:text-[19px]">
+          <h3 className="mt-0.5 font-playfair text-[clamp(14px,1.35vw,18px)] leading-tight font-bold break-words text-white [overflow-wrap:anywhere]">
             {parsed.headline}
           </h3>
-          <p className="mt-0.5 font-bricolage text-[13px] font-extrabold tracking-wide text-white uppercase sm:text-[14px]">
+          <p className="mt-0.5 font-bricolage text-[12px] font-extrabold tracking-wide text-white uppercase sm:text-[13px]">
             {parsed.deliStatus}
           </p>
         </div>
-        <div className="mt-auto rounded-[14px] border border-white/20 bg-white/10 px-3 py-2 backdrop-blur-sm">
-          <p className="font-hanken text-[12px] font-semibold leading-snug text-white">
+        <div className="mt-auto min-w-0 rounded-[14px] border border-white/20 bg-white/10 px-3 py-2 backdrop-blur-sm">
+          <p className="font-hanken text-[12px] font-semibold leading-snug break-words text-white [overflow-wrap:anywhere]">
             {parsed.hoursLine}
           </p>
         </div>
@@ -264,18 +264,17 @@ function WeekSection({
   month: HotPlateMonth;
   defaultPrice: string;
 }) {
-  // Always Mon–Sat columns so every week uses the same card width.
-  const columns = Array.from({ length: 6 }, () => [] as HotPlateDayWithMeta[]);
+  // Always Mon–Sun columns so every week uses the same card width.
+  const columns = Array.from({ length: 7 }, () => [] as HotPlateDayWithMeta[]);
   for (const day of week.days) {
     const col = weekdayColumn(new Date(month.year, month.month - 1, day.day));
-    if (col < 0) continue;
     columns[col].push(day);
   }
 
   return (
     <section className="flex flex-col gap-3 lg:flex-row lg:items-stretch lg:gap-3">
       <WeekHeaderCard week={week} />
-      <div className="grid min-w-0 flex-1 grid-cols-2 items-stretch gap-2 sm:grid-cols-3 md:grid-cols-6 md:gap-2.5">
+      <div className="grid min-w-0 flex-1 grid-cols-2 items-stretch gap-2 sm:grid-cols-3 md:grid-cols-7 md:gap-2">
         {columns.map((entries, colIndex) => (
           <div
             key={`col-${colIndex}`}
