@@ -1,42 +1,113 @@
 name: Deploy Miami Market Web to DigitalOcean
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Model: BUILD ON THE RUNNER, INSTALL PROD DEPS ON THE SERVER (serialized).
+# Mirrors the backend/admin deploy. Web has no committed env and no auth secret,
+# so it's the simplest of the three: build on the runner, ship the build output,
+# prod-install on the server under the shared lock, restart PM2.
+#
+# If web later needs per-env PUBLIC build config, drop an infra/.env.<env> file
+# in and the build step below will source it automatically.
+# ─────────────────────────────────────────────────────────────────────────────
+
 on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment (maps to infra/.env.<environment>)'
+        required: true
+        default: development
+        type: choice
+        options:
+          - development
   push:
     branches:
       - develop
 
-jobs:
-  deploy:
-    name: Deploy
-    runs-on: ubuntu-latest
+concurrency:
+  group: deploy-web-${{ github.ref }}
+  cancel-in-progress: false
 
+env:
+  DEPLOY_ENV: ${{ inputs.environment || 'development' }}
+  DEPLOY_PATH: /home/ubuntu/miami-market-web
+  PM2_NAME: mm-web
+  TARBALL: mm-web.tar.gz
+  # MUST match backend/admin so all apps serialise against one lock.
+  LOCK_FILE: /var/lock/mm-deploy.lock
+
+jobs:
+  build-and-deploy:
+    name: build (runner) · ship · install (server)
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'development' }}
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy to Droplet via SSH
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # ── Build on the runner (source infra/.env.<env> if present) ───────────
+      - name: Build Next.js app
+        run: |
+          ENV_FILE="infra/.env.${DEPLOY_ENV}"
+          if [ -f "$ENV_FILE" ]; then
+            echo "Sourcing build config from $ENV_FILE"
+            set -a; . "$ENV_FILE"; set +a
+          fi
+          npm run build
+
+      - name: Package artifact
+        run: |
+          tar czf "$TARBALL" \
+            .next \
+            public \
+            package.json \
+            package-lock.json \
+            next.config.ts
+          echo "Artifact size: $(du -h "$TARBALL" | cut -f1)"
+
+      - name: Copy artifact to droplet
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          source: ${{ env.TARBALL }}
+          target: /tmp
+
+      - name: Release on droplet
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DROPLET_HOST }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
+          envs: DEPLOY_PATH,PM2_NAME,TARBALL,LOCK_FILE
           script: |
             set -euo pipefail
-            cd /home/ubuntu/miami-market-web
 
-            echo "⬇️ Syncing to origin/develop..."
-            # Never git pull on a deploy target — npm install can dirty package-lock.json.
-            # Hard reset matches remote; .env and .env.local are gitignored and untouched.
-            git fetch origin develop
-            git reset --hard origin/develop
+            exec 9>"$LOCK_FILE"
+            flock -w 600 9 || { echo "::error::Timed out waiting for deploy lock"; exit 1; }
 
-            echo "📦 Installing dependencies..."
-            npm ci
+            echo "📂 Staging into $DEPLOY_PATH..."
+            mkdir -p "$DEPLOY_PATH"
+            cd "$DEPLOY_PATH"
 
-            echo "🏗️ Building Next.js app..."
-            npm run build
+            rm -rf .next
+            tar xzf "/tmp/$TARBALL"
 
-            echo "♻️ Restarting PM2..."
-            pm2 restart mm-web
+            echo "📦 Installing prod dependencies..."
+            npm ci --omit=dev --prefer-offline --no-audit --no-fund
 
-            echo "✅ Deployment complete!"
+            echo "♻️ Restarting PM2 process $PM2_NAME..."
+            pm2 restart "$PM2_NAME" --update-env
+
+            rm -f "/tmp/$TARBALL"
+            echo "✅ Web deployment complete!"
