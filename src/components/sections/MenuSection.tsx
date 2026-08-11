@@ -102,23 +102,55 @@ export default async function MenuSection() {
               ))}
             </div>
 
-            <div className="my-10 flex items-center gap-4">
-              <span className="h-px flex-1 bg-green-dark/18" />
-              <span className="font-cormorant text-[11px] tracking-[0.26em] text-accent uppercase">
-                {menuCopy.build_your_way_label}
-              </span>
-              <span className="h-px flex-1 bg-green-dark/18" />
-            </div>
+            {(items.breads.length > 0 ||
+              items.cheeses.length > 0 ||
+              items.veggies.length > 0 ||
+              items.addons.length > 0 ||
+              items.other_groups.length > 0) && (
+              <>
+                <div className="my-10 flex items-center gap-4">
+                  <span className="h-px flex-1 bg-green-dark/18" />
+                  <span className="font-cormorant text-[11px] tracking-[0.26em] text-accent uppercase">
+                    {menuCopy.build_your_way_label}
+                  </span>
+                  <span className="h-px flex-1 bg-green-dark/18" />
+                </div>
 
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-[26px]">
-              <BuildGroup title={menuCopy.breads_group_title} items={items.breads} />
-              <BuildGroup title={menuCopy.cheeses_group_title} items={items.cheeses} />
-              <BuildGroup
-                title={menuCopy.veggies_group_title}
-                items={items.veggies}
-                addOns={items.addons}
-              />
-            </div>
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-[26px]">
+                  {items.breads.length > 0 && (
+                    <BuildGroup
+                      title={menuCopy.breads_group_title}
+                      items={items.breads}
+                    />
+                  )}
+                  {items.cheeses.length > 0 && (
+                    <BuildGroup
+                      title={menuCopy.cheeses_group_title}
+                      items={items.cheeses}
+                    />
+                  )}
+                  {(items.veggies.length > 0 || items.addons.length > 0) && (
+                    <BuildGroup
+                      title={menuCopy.veggies_group_title}
+                      items={items.veggies}
+                      addOns={items.addons}
+                    />
+                  )}
+                  {items.other_groups.map((group) => (
+                    <div key={group.title}>
+                      <h4 className="mb-3.5 font-hanken text-[12px] font-bold tracking-[0.12em] text-green-dark uppercase">
+                        {group.title}
+                      </h4>
+                      <div className="flex flex-col gap-0.5">
+                        {group.items.map((row) => (
+                          <MeatRow key={`${group.title}-${row.name}`} meat={row} />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
 

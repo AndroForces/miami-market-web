@@ -3,21 +3,37 @@ import type {
   MenuApiItem,
   WebsiteHotSandwich,
   WebsiteMenuAddon,
+  WebsiteMenuCategoryGroup,
   WebsiteMenuItems,
   WebsiteMenuMeat,
 } from "./menu-api.types";
 
-const CATEGORY_KEYS = {
+/**
+ * Reserved website blocks. Keys are normalized category names (and aliases).
+ * Any other active category becomes an `other_groups` entry under Build it your way.
+ */
+const CATEGORY_BUCKETS: Record<string, BucketKey> = {
   meats: "meats",
+  "deli favorites": "meats",
   breads: "breads",
   cheeses: "cheeses",
   veggies: "veggies",
+  "veggies & condiments": "veggies",
   "add-ons": "addons",
+  addons: "addons",
   soups: "soups",
   "hot sandwiches": "hotSandwiches",
-} as const;
+};
 
-type BucketKey = (typeof CATEGORY_KEYS)[keyof typeof CATEGORY_KEYS];
+type BucketKey =
+  | "meats"
+  | "breads"
+  | "cheeses"
+  | "veggies"
+  | "addons"
+  | "soups"
+  | "hotSandwiches"
+  | "other";
 
 function normalizeCategoryName(name: string): string {
   return name.trim().toLowerCase();
@@ -31,6 +47,14 @@ function formatMoney(amount: number): string {
   return amount.toFixed(2);
 }
 
+function toPricedItem(item: MenuApiItem): WebsiteMenuMeat {
+  return {
+    name: item.name,
+    price: item.price,
+    image_url: resolveHoverImage(item),
+  };
+}
+
 function emptyWebsiteMenuItems(): WebsiteMenuItems {
   return {
     meats: [],
@@ -40,12 +64,14 @@ function emptyWebsiteMenuItems(): WebsiteMenuItems {
     addons: [],
     soup_sizes: [],
     hot_sandwiches: [],
+    other_groups: [],
   };
 }
 
 /**
  * Groups available Menu API items into the website Menu section blocks.
- * Category match is case-insensitive on the public category list names.
+ * Category match is case-insensitive (with aliases for live Admin names).
+ * Unmapped active categories are returned in `other_groups` using their Admin title.
  * Item order within each block follows the `items` array order.
  */
 export function mapMenuApiToWebsiteItems(
@@ -53,31 +79,33 @@ export function mapMenuApiToWebsiteItems(
   items: MenuApiItem[],
 ): WebsiteMenuItems {
   const idToBucket = new Map<string, BucketKey>();
+  const idToTitle = new Map<string, string>();
+  const otherOrder: string[] = [];
 
   for (const category of categories) {
-    const key = CATEGORY_KEYS[normalizeCategoryName(category.name) as keyof typeof CATEGORY_KEYS];
-    if (key) {
-      idToBucket.set(category.id, key);
+    if (!category.is_active) continue;
+    const normalized = normalizeCategoryName(category.name);
+    const reserved = CATEGORY_BUCKETS[normalized];
+    const bucket: BucketKey = reserved ?? "other";
+    idToBucket.set(category.id, bucket);
+    idToTitle.set(category.id, category.name);
+    if (bucket === "other") {
+      otherOrder.push(category.id);
     }
   }
 
   const result = emptyWebsiteMenuItems();
   const hot: WebsiteHotSandwich[] = [];
+  const otherItems = new Map<string, WebsiteMenuMeat[]>();
 
   for (const item of items) {
     const bucket = idToBucket.get(item.category.id);
     if (!bucket) continue;
 
     switch (bucket) {
-      case "meats": {
-        const meat: WebsiteMenuMeat = {
-          name: item.name,
-          price: item.price,
-          image_url: resolveHoverImage(item),
-        };
-        result.meats.push(meat);
+      case "meats":
+        result.meats.push(toPricedItem(item));
         break;
-      }
       case "breads":
         result.breads.push(item.name);
         break;
@@ -109,11 +137,28 @@ export function mapMenuApiToWebsiteItems(
         });
         break;
       }
+      case "other": {
+        const list = otherItems.get(item.category.id) ?? [];
+        list.push(toPricedItem(item));
+        otherItems.set(item.category.id, list);
+        break;
+      }
       default:
         break;
     }
   }
 
+  const other_groups: WebsiteMenuCategoryGroup[] = [];
+  for (const categoryId of otherOrder) {
+    const groupItems = otherItems.get(categoryId);
+    if (!groupItems || groupItems.length === 0) continue;
+    other_groups.push({
+      title: idToTitle.get(categoryId) ?? "Menu",
+      items: groupItems,
+    });
+  }
+
   result.hot_sandwiches = hot;
+  result.other_groups = other_groups;
   return result;
 }

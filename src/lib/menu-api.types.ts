@@ -45,6 +45,12 @@ export interface WebsiteHotSandwich {
   image_url: string | null;
 }
 
+/** Active Menu categories that are not mapped into a reserved website block. */
+export interface WebsiteMenuCategoryGroup {
+  title: string;
+  items: WebsiteMenuMeat[];
+}
+
 export interface WebsiteMenuItems {
   meats: WebsiteMenuMeat[];
   breads: string[];
@@ -53,4 +59,5 @@ export interface WebsiteMenuItems {
   addons: WebsiteMenuAddon[];
   soup_sizes: string[];
   hot_sandwiches: WebsiteHotSandwich[];
+  other_groups: WebsiteMenuCategoryGroup[];
 }

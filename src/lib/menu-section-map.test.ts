@@ -168,4 +168,85 @@ describe("mapMenuApiToWebsiteItems", () => {
     ]);
     expect(result.hot_sandwiches.map((h) => h.num)).toEqual(["01", "02"]);
   });
+
+  it("should_map_deli_favorites_alias_to_meats", () => {
+    const liveCats: MenuApiCategory[] = [
+      {
+        id: "c-deli",
+        name: "Deli Favorites",
+        display_order: 1,
+        is_active: true,
+      },
+    ];
+    const result = mapMenuApiToWebsiteItems(liveCats, [
+      item({
+        id: "1",
+        name: "Pastrami Sandwich",
+        price: 7.5,
+        categoryId: "c-deli",
+        categoryName: "Deli Favorites",
+      }),
+    ]);
+    expect(result.meats).toEqual([
+      { name: "Pastrami Sandwich", price: 7.5, image_url: null },
+    ]);
+  });
+
+  it("should_expose_unmapped_active_categories_as_other_groups", () => {
+    const liveCats: MenuApiCategory[] = [
+      {
+        id: "c-sides",
+        name: "Sides",
+        display_order: 1,
+        is_active: true,
+      },
+      {
+        id: "c-hotplate",
+        name: "Hot Plate Specials",
+        display_order: 2,
+        is_active: true,
+      },
+      {
+        id: "c-test",
+        name: "Test",
+        display_order: 3,
+        is_active: false,
+      },
+    ];
+    const result = mapMenuApiToWebsiteItems(liveCats, [
+      item({
+        id: "1",
+        name: "Mac & Cheese",
+        price: 3,
+        categoryId: "c-sides",
+        categoryName: "Sides",
+      }),
+      item({
+        id: "2",
+        name: "Pan Fried Chicken Plate",
+        price: 11,
+        categoryId: "c-hotplate",
+        categoryName: "Hot Plate Specials",
+      }),
+      item({
+        id: "3",
+        name: "Test 2",
+        price: 20,
+        categoryId: "c-test",
+        categoryName: "Test",
+      }),
+    ]);
+    expect(result.other_groups).toEqual([
+      {
+        title: "Sides",
+        items: [{ name: "Mac & Cheese", price: 3, image_url: null }],
+      },
+      {
+        title: "Hot Plate Specials",
+        items: [
+          { name: "Pan Fried Chicken Plate", price: 11, image_url: null },
+        ],
+      },
+    ]);
+  });
 });
