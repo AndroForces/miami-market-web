@@ -20,7 +20,9 @@ export function MenuItemHoverName({
   const [open, setOpen] = useState(false);
 
   if (!imageUrl) {
-    return <span className={className}>{name}</span>;
+    return (
+      <span className={`relative inline-block ${className ?? ""}`}>{name}</span>
+    );
   }
 
   return (
