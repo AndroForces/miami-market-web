@@ -120,7 +120,7 @@ describe("mapMenuApiToWebsiteItems", () => {
     ]);
   });
 
-  it("should_return_empty_blocks_when_categories_missing", () => {
+  it("should_still_map_by_item_category_name_when_categories_list_empty", () => {
     const result = mapMenuApiToWebsiteItems([], [
       item({
         id: "1",
@@ -130,7 +130,9 @@ describe("mapMenuApiToWebsiteItems", () => {
         categoryName: "Meats",
       }),
     ]);
-    expect(result.meats).toEqual([]);
+    expect(result.meats).toEqual([
+      { name: "Roast Beef", price: 7.5, image_url: null },
+    ]);
     expect(result.hot_sandwiches).toEqual([]);
   });
 
@@ -192,7 +194,7 @@ describe("mapMenuApiToWebsiteItems", () => {
     ]);
   });
 
-  it("should_expose_unmapped_active_categories_as_other_groups", () => {
+  it("should_expose_unmapped_categories_as_other_groups_including_inactive", () => {
     const liveCats: MenuApiCategory[] = [
       {
         id: "c-sides",
@@ -246,6 +248,28 @@ describe("mapMenuApiToWebsiteItems", () => {
         items: [
           { name: "Pan Fried Chicken Plate", price: 11, image_url: null },
         ],
+      },
+      {
+        title: "Test",
+        items: [{ name: "Test 2", price: 20, image_url: null }],
+      },
+    ]);
+  });
+
+  it("should_include_items_when_category_missing_from_categories_list", () => {
+    const result = mapMenuApiToWebsiteItems([], [
+      item({
+        id: "1",
+        name: "Orphan Item",
+        price: 9,
+        categoryId: "c-orphan",
+        categoryName: "Sides",
+      }),
+    ]);
+    expect(result.other_groups).toEqual([
+      {
+        title: "Sides",
+        items: [{ name: "Orphan Item", price: 9, image_url: null }],
       },
     ]);
   });

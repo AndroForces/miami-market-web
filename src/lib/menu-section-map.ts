@@ -10,7 +10,8 @@ import type {
 
 /**
  * Reserved website blocks. Keys are normalized category names (and aliases).
- * Any other active category becomes an `other_groups` entry under Build it your way.
+ * Any other category with available items becomes an `other_groups` entry
+ * (shown as its own titled list — not under Build it your way).
  */
 const CATEGORY_BUCKETS: Record<string, BucketKey> = {
   meats: "meats",
@@ -55,6 +56,10 @@ function toPricedItem(item: MenuApiItem): WebsiteMenuMeat {
   };
 }
 
+function resolveBucket(categoryName: string): BucketKey {
+  return CATEGORY_BUCKETS[normalizeCategoryName(categoryName)] ?? "other";
+}
+
 function emptyWebsiteMenuItems(): WebsiteMenuItems {
   return {
     meats: [],
@@ -69,10 +74,9 @@ function emptyWebsiteMenuItems(): WebsiteMenuItems {
 }
 
 /**
- * Groups available Menu API items into the website Menu section blocks.
- * Category match is case-insensitive (with aliases for live Admin names).
- * Unmapped active categories are returned in `other_groups` using their Admin title.
- * Item order within each block follows the `items` array order.
+ * Groups every available Menu API item into website Menu section blocks.
+ * Uses category name aliases; items whose category is inactive / missing from
+ * the categories list still appear (via `item.category`).
  */
 export function mapMenuApiToWebsiteItems(
   categories: MenuApiCategory[],
@@ -82,14 +86,15 @@ export function mapMenuApiToWebsiteItems(
   const idToTitle = new Map<string, string>();
   const otherOrder: string[] = [];
 
-  for (const category of categories) {
-    if (!category.is_active) continue;
-    const normalized = normalizeCategoryName(category.name);
-    const reserved = CATEGORY_BUCKETS[normalized];
-    const bucket: BucketKey = reserved ?? "other";
+  const sortedCategories = [...categories].sort(
+    (a, b) => a.display_order - b.display_order,
+  );
+
+  for (const category of sortedCategories) {
+    const bucket = resolveBucket(category.name);
     idToBucket.set(category.id, bucket);
     idToTitle.set(category.id, category.name);
-    if (bucket === "other") {
+    if (bucket === "other" && !otherOrder.includes(category.id)) {
       otherOrder.push(category.id);
     }
   }
@@ -99,8 +104,15 @@ export function mapMenuApiToWebsiteItems(
   const otherItems = new Map<string, WebsiteMenuMeat[]>();
 
   for (const item of items) {
-    const bucket = idToBucket.get(item.category.id);
-    if (!bucket) continue;
+    let bucket = idToBucket.get(item.category.id);
+    if (!bucket) {
+      bucket = resolveBucket(item.category.name);
+      idToBucket.set(item.category.id, bucket);
+      idToTitle.set(item.category.id, item.category.name);
+      if (bucket === "other" && !otherOrder.includes(item.category.id)) {
+        otherOrder.push(item.category.id);
+      }
+    }
 
     switch (bucket) {
       case "meats":

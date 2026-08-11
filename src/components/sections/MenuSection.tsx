@@ -55,12 +55,40 @@ function BuildGroup({
   );
 }
 
+function CategoryPricedGroup({
+  title,
+  rows,
+}: {
+  title: string;
+  rows: WebsiteMenuMeat[];
+}) {
+  if (rows.length === 0) return null;
+  return (
+    <div className="mt-10">
+      <h4 className="mb-3.5 font-hanken text-[12px] font-bold tracking-[0.12em] text-green-dark uppercase">
+        {title}
+      </h4>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-x-11 gap-y-0.5">
+        {rows.map((row) => (
+          <MeatRow key={`${title}-${row.name}`} meat={row} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default async function MenuSection() {
   const [{ menu }, items] = await Promise.all([
     getWebsiteContent(),
     getWebsiteMenuItems(),
   ]);
   const menuCopy = menu.copy;
+
+  const hasBuildYourWay =
+    items.breads.length > 0 ||
+    items.cheeses.length > 0 ||
+    items.veggies.length > 0 ||
+    items.addons.length > 0;
 
   return (
     <section id="build" className="bg-green-dark py-[90px] text-cream">
@@ -96,17 +124,23 @@ export default async function MenuSection() {
               </p>
             </div>
 
-            <div className="mt-[34px] grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-x-11 gap-y-0.5">
-              {items.meats.map((m) => (
-                <MeatRow key={m.name} meat={m} />
-              ))}
-            </div>
+            {items.meats.length > 0 && (
+              <div className="mt-[34px] grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-x-11 gap-y-0.5">
+                {items.meats.map((m) => (
+                  <MeatRow key={m.name} meat={m} />
+                ))}
+              </div>
+            )}
 
-            {(items.breads.length > 0 ||
-              items.cheeses.length > 0 ||
-              items.veggies.length > 0 ||
-              items.addons.length > 0 ||
-              items.other_groups.length > 0) && (
+            {items.other_groups.map((group) => (
+              <CategoryPricedGroup
+                key={group.title}
+                title={group.title}
+                rows={group.items}
+              />
+            ))}
+
+            {hasBuildYourWay && (
               <>
                 <div className="my-10 flex items-center gap-4">
                   <span className="h-px flex-1 bg-green-dark/18" />
@@ -136,85 +170,79 @@ export default async function MenuSection() {
                       addOns={items.addons}
                     />
                   )}
-                  {items.other_groups.map((group) => (
-                    <div key={group.title}>
-                      <h4 className="mb-3.5 font-hanken text-[12px] font-bold tracking-[0.12em] text-green-dark uppercase">
-                        {group.title}
-                      </h4>
-                      <div className="flex flex-col gap-0.5">
-                        {group.items.map((row) => (
-                          <MeatRow key={`${group.title}-${row.name}`} meat={row} />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </>
             )}
           </div>
         </div>
 
-        <div className="animate-reveal-view mt-[34px] flex flex-wrap items-center justify-between gap-5 rounded-mm bg-accent p-[30px]">
-          <div>
-            <h3 className="m-0 font-playfair text-[28px] font-bold text-white">
-              {menuCopy.soups_heading}
-            </h3>
-            <p className="mt-2 font-hanken text-base text-white/92">
-              {menuCopy.soups_subheading}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2.5 font-hanken text-[14px] font-semibold text-white">
-            {items.soup_sizes.map((s) => (
-              <span
-                key={s}
-                className="rounded-full bg-black/18 px-4 py-2.5"
-              >
-                {s}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="animate-reveal-view relative mt-[70px]">
-          <span className="pointer-events-none absolute -top-[52px] -left-0.5 font-bricolage text-[clamp(70px,13vw,160px)] leading-none font-extrabold tracking-[-0.04em] whitespace-nowrap text-cream/5">
-            {menuCopy.hot_sandwiches_watermark}
-          </span>
-          <h3 className="relative m-0 font-playfair text-[clamp(26px,3.5vw,40px)] font-bold text-cream">
-            {menuCopy.hot_sandwiches_heading}
-          </h3>
-          <p className="relative mt-2 font-hanken text-[12px] font-bold tracking-[0.1em] text-green-light uppercase">
-            {menuCopy.hot_sandwiches_subheading}
-          </p>
-        </div>
-        <div className="mt-[26px] grid grid-cols-[repeat(auto-fit,minmax(270px,1fr))] gap-[18px]">
-          {items.hot_sandwiches.map((h) => (
-            <div
-              key={h.num}
-              className="animate-reveal-view relative overflow-hidden rounded-mm border-t-4 border-accent bg-cream px-6 pt-[26px] pb-6 text-green-dark transition-[transform,box-shadow] duration-200 hover:-translate-y-[7px] hover:shadow-[0_26px_46px_-22px_rgba(0,0,0,0.6)]"
-            >
-              <span className="pointer-events-none absolute right-3.5 -bottom-[18px] font-bricolage text-[98px] leading-none font-extrabold text-green-dark/6">
-                {h.num}
-              </span>
-              <span
-                className={`absolute top-[18px] right-[18px] rounded-full px-[13px] py-[7px] font-bricolage text-[15px] font-extrabold ${
-                  h.accent_price
-                    ? "bg-accent text-white"
-                    : "bg-green-dark text-cream"
-                }`}
-              >
-                {h.price_display}
-              </span>
-              <MenuItemHoverName
-                name={h.name}
-                imageUrl={h.image_url}
-                className="relative mt-0.5 max-w-[74%] font-playfair text-[23px] font-bold"
-              />
-              <p className="relative mt-2.5 font-hanken text-[15px] leading-snug text-text-muted">
-                {h.description}
+        {items.soup_sizes.length > 0 && (
+          <div className="animate-reveal-view mt-[34px] flex flex-wrap items-center justify-between gap-5 rounded-mm bg-accent p-[30px]">
+            <div>
+              <h3 className="m-0 font-playfair text-[28px] font-bold text-white">
+                {menuCopy.soups_heading}
+              </h3>
+              <p className="mt-2 font-hanken text-base text-white/92">
+                {menuCopy.soups_subheading}
               </p>
             </div>
-          ))}
-        </div>
+            <div className="flex flex-wrap gap-2.5 font-hanken text-[14px] font-semibold text-white">
+              {items.soup_sizes.map((s) => (
+                <span
+                  key={s}
+                  className="rounded-full bg-black/18 px-4 py-2.5"
+                >
+                  {s}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {items.hot_sandwiches.length > 0 && (
+          <>
+            <div className="animate-reveal-view relative mt-[70px]">
+              <span className="pointer-events-none absolute -top-[52px] -left-0.5 font-bricolage text-[clamp(70px,13vw,160px)] leading-none font-extrabold tracking-[-0.04em] whitespace-nowrap text-cream/5">
+                {menuCopy.hot_sandwiches_watermark}
+              </span>
+              <h3 className="relative m-0 font-playfair text-[clamp(26px,3.5vw,40px)] font-bold text-cream">
+                {menuCopy.hot_sandwiches_heading}
+              </h3>
+              <p className="relative mt-2 font-hanken text-[12px] font-bold tracking-[0.1em] text-green-light uppercase">
+                {menuCopy.hot_sandwiches_subheading}
+              </p>
+            </div>
+            <div className="mt-[26px] grid grid-cols-[repeat(auto-fit,minmax(270px,1fr))] gap-[18px]">
+              {items.hot_sandwiches.map((h) => (
+                <div
+                  key={h.num}
+                  className="animate-reveal-view relative overflow-hidden rounded-mm border-t-4 border-accent bg-cream px-6 pt-[26px] pb-6 text-green-dark transition-[transform,box-shadow] duration-200 hover:-translate-y-[7px] hover:shadow-[0_26px_46px_-22px_rgba(0,0,0,0.6)]"
+                >
+                  <span className="pointer-events-none absolute right-3.5 -bottom-[18px] font-bricolage text-[98px] leading-none font-extrabold text-green-dark/6">
+                    {h.num}
+                  </span>
+                  <span
+                    className={`absolute top-[18px] right-[18px] rounded-full px-[13px] py-[7px] font-bricolage text-[15px] font-extrabold ${
+                      h.accent_price
+                        ? "bg-accent text-white"
+                        : "bg-green-dark text-cream"
+                    }`}
+                  >
+                    {h.price_display}
+                  </span>
+                  <MenuItemHoverName
+                    name={h.name}
+                    imageUrl={h.image_url}
+                    className="relative mt-0.5 max-w-[74%] font-playfair text-[23px] font-bold"
+                  />
+                  <p className="relative mt-2.5 font-hanken text-[15px] leading-snug text-text-muted">
+                    {h.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </section>
   );
