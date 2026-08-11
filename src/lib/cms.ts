@@ -243,3 +243,49 @@ export async function getSiteSettingsForMetadata(): Promise<SiteSettingsContent>
   const body = await res.json();
   return body.data as SiteSettingsContent;
 }
+
+export interface GalleryImage {
+  id: string;
+  caption: string;
+  category: string | null;
+  image_url: string;
+}
+
+export interface GalleryContent {
+  eyebrow: string;
+  heading: string;
+  intro: string;
+  images: GalleryImage[];
+}
+
+const EMPTY_GALLERY: GalleryContent = {
+  eyebrow: "",
+  heading: "",
+  intro: "",
+  images: [],
+};
+
+/** Dedicated gallery page payload — empty content on failure (do not crash). */
+export async function getGallery(): Promise<GalleryContent> {
+  try {
+    const res = await fetch(`${getBackendUrl()}/api/v1/web/gallery`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) {
+      return EMPTY_GALLERY;
+    }
+    const body = await res.json();
+    const data = body.data as GalleryContent;
+    return {
+      eyebrow: data.eyebrow ?? "",
+      heading: data.heading ?? "",
+      intro: data.intro ?? "",
+      images: (data.images ?? []).map((img) => ({
+        ...img,
+        image_url: resolveMediaUrl(img.image_url) ?? img.image_url,
+      })),
+    };
+  } catch {
+    return EMPTY_GALLERY;
+  }
+}
