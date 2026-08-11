@@ -1,12 +1,16 @@
-import type { MenuMeat } from "@/lib/cms";
+import { MenuItemHoverName } from "@/components/sections/MenuItemHoverName";
 import { getWebsiteContent } from "@/lib/cms";
+import { getWebsiteMenuItems } from "@/lib/menu-api";
+import type { WebsiteMenuMeat } from "@/lib/menu-api.types";
 
-function MeatRow({ meat }: { meat: MenuMeat }) {
+function MeatRow({ meat }: { meat: WebsiteMenuMeat }) {
   return (
     <div className="flex items-baseline gap-2 border-b border-green-dark/7 py-2">
-      <span className="font-cormorant text-[17px] font-medium tracking-[0.01em]">
-        {meat.name}
-      </span>
+      <MenuItemHoverName
+        name={meat.name}
+        imageUrl={meat.image_url}
+        className="font-cormorant text-[17px] font-medium tracking-[0.01em]"
+      />
       <span className="flex-1 -translate-y-[5px] border-b-2 border-dotted border-green-dark/26" />
       <span className="font-bricolage text-[15.5px] font-extrabold text-accent">
         ${meat.price.toFixed(2)}
@@ -52,7 +56,10 @@ function BuildGroup({
 }
 
 export default async function MenuSection() {
-  const { menu } = await getWebsiteContent();
+  const [{ menu }, items] = await Promise.all([
+    getWebsiteContent(),
+    getWebsiteMenuItems(),
+  ]);
   const menuCopy = menu.copy;
 
   return (
@@ -90,7 +97,7 @@ export default async function MenuSection() {
             </div>
 
             <div className="mt-[34px] grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-x-11 gap-y-0.5">
-              {menu.meats.map((m) => (
+              {items.meats.map((m) => (
                 <MeatRow key={m.name} meat={m} />
               ))}
             </div>
@@ -104,12 +111,12 @@ export default async function MenuSection() {
             </div>
 
             <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-[26px]">
-              <BuildGroup title={menuCopy.breads_group_title} items={menu.breads} />
-              <BuildGroup title={menuCopy.cheeses_group_title} items={menu.cheeses} />
+              <BuildGroup title={menuCopy.breads_group_title} items={items.breads} />
+              <BuildGroup title={menuCopy.cheeses_group_title} items={items.cheeses} />
               <BuildGroup
                 title={menuCopy.veggies_group_title}
-                items={menu.veggies}
-                addOns={menu.addons}
+                items={items.veggies}
+                addOns={items.addons}
               />
             </div>
           </div>
@@ -125,7 +132,7 @@ export default async function MenuSection() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2.5 font-hanken text-[14px] font-semibold text-white">
-            {menu.soup_sizes.map((s) => (
+            {items.soup_sizes.map((s) => (
               <span
                 key={s}
                 className="rounded-full bg-black/18 px-4 py-2.5"
@@ -148,7 +155,7 @@ export default async function MenuSection() {
           </p>
         </div>
         <div className="mt-[26px] grid grid-cols-[repeat(auto-fit,minmax(270px,1fr))] gap-[18px]">
-          {menu.hot_sandwiches.map((h) => (
+          {items.hot_sandwiches.map((h) => (
             <div
               key={h.num}
               className="animate-reveal-view relative overflow-hidden rounded-mm border-t-4 border-accent bg-cream px-6 pt-[26px] pb-6 text-green-dark transition-[transform,box-shadow] duration-200 hover:-translate-y-[7px] hover:shadow-[0_26px_46px_-22px_rgba(0,0,0,0.6)]"
@@ -165,9 +172,11 @@ export default async function MenuSection() {
               >
                 {h.price_display}
               </span>
-              <h4 className="relative mt-0.5 max-w-[74%] font-playfair text-[23px] font-bold">
-                {h.name}
-              </h4>
+              <MenuItemHoverName
+                name={h.name}
+                imageUrl={h.image_url}
+                className="relative mt-0.5 max-w-[74%] font-playfair text-[23px] font-bold"
+              />
               <p className="relative mt-2.5 font-hanken text-[15px] leading-snug text-text-muted">
                 {h.description}
               </p>
