@@ -1,13 +1,23 @@
 /* eslint-disable @next/next/no-img-element */
 import { getWebsiteContent } from "@/lib/cms";
 
+/**
+ * Homepage sections use hash anchors (`#hours`). From `/gallery` a bare hash
+ * stays on the current page and finds nothing — prefix with `/` so it always
+ * lands on the home page section.
+ */
+function resolveNavHref(href: string): string {
+  if (href.startsWith("#")) return `/${href}`;
+  return href;
+}
+
 export default async function Nav() {
   const { nav_links: navLinks, site } = await getWebsiteContent();
 
   return (
     <header className="sticky top-0 z-60 border-b border-green-dark/12 bg-cream/90 backdrop-blur-md">
       <nav className="mx-auto flex max-w-[1240px] items-center justify-between gap-3 px-4 py-3 sm:gap-[18px] sm:px-6 sm:py-[13px]">
-        <a href="#top" className="flex shrink-0 items-center no-underline">
+        <a href="/#top" className="flex shrink-0 items-center no-underline">
           <img
             src="/images/logo.png"
             alt="Miami Market"
@@ -18,7 +28,7 @@ export default async function Nav() {
           {navLinks.map((l) => (
             <a
               key={l.href}
-              href={l.href}
+              href={resolveNavHref(l.href)}
               className="shrink-0 rounded-full px-3 py-2 text-[14px] font-semibold text-green-dark no-underline transition-colors duration-150 hover:bg-green/12 sm:px-3.5 sm:text-[15px]"
             >
               {l.label}
