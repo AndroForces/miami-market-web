@@ -29,6 +29,7 @@ export interface WebsiteMenuMeat {
   name: string;
   price: number;
   image_url: string | null;
+  description: string | null;
 }
 
 export interface WebsiteMenuAddon {
@@ -45,19 +46,20 @@ export interface WebsiteHotSandwich {
   image_url: string | null;
 }
 
-/** Active Menu categories that are not mapped into a reserved website block. */
+/** One Admin Menu category as shown on the website (may have zero items). */
 export interface WebsiteMenuCategoryGroup {
+  id: string;
   title: string;
   items: WebsiteMenuMeat[];
 }
 
 export interface WebsiteMenuItems {
-  meats: WebsiteMenuMeat[];
+  /** Every category from Menu API, in display_order (includes empty categories). */
+  categories: WebsiteMenuCategoryGroup[];
   breads: string[];
   cheeses: string[];
   veggies: string[];
   addons: WebsiteMenuAddon[];
   soup_sizes: string[];
   hot_sandwiches: WebsiteHotSandwich[];
-  other_groups: WebsiteMenuCategoryGroup[];
 }

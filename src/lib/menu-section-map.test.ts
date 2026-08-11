@@ -2,16 +2,6 @@ import { describe, expect, it } from "vitest";
 import { mapMenuApiToWebsiteItems } from "./menu-section-map";
 import type { MenuApiCategory, MenuApiItem } from "./menu-api.types";
 
-const cats: MenuApiCategory[] = [
-  { id: "c-meats", name: "Meats", display_order: 1, is_active: true },
-  { id: "c-breads", name: "Breads", display_order: 2, is_active: true },
-  { id: "c-cheeses", name: "Cheeses", display_order: 3, is_active: true },
-  { id: "c-veggies", name: "Veggies", display_order: 4, is_active: true },
-  { id: "c-addons", name: "Add-ons", display_order: 5, is_active: true },
-  { id: "c-soups", name: "Soups", display_order: 6, is_active: true },
-  { id: "c-hot", name: "hot sandwiches", display_order: 7, is_active: true },
-];
-
 function item(
   partial: Pick<MenuApiItem, "id" | "name" | "price"> & {
     categoryId: string;
@@ -38,239 +28,108 @@ function item(
 }
 
 describe("mapMenuApiToWebsiteItems", () => {
-  it("should_group_items_by_case_insensitive_category_name", () => {
-    const items = [
+  it("should_return_every_category_in_display_order_including_empty", () => {
+    const cats: MenuApiCategory[] = [
+      { id: "c-hot", name: "Hot Sandwiches", display_order: 1, is_active: true },
+      { id: "c-deli", name: "Deli Favorites", display_order: 3, is_active: true },
+      { id: "c-drinks", name: "Drinks", display_order: 6, is_active: true },
+      { id: "c-soft", name: "Soft", display_order: 12, is_active: true },
+    ];
+    const result = mapMenuApiToWebsiteItems(cats, [
       item({
         id: "1",
-        name: "Roast Beef",
-        price: 7.5,
-        categoryId: "c-meats",
-        categoryName: "Meats",
-        image_thumb_url: "https://cdn.example/rb-thumb.webp",
-      }),
-      item({
-        id: "2",
-        name: "White",
-        price: 0,
-        categoryId: "c-breads",
-        categoryName: "Breads",
-      }),
-      item({
-        id: "3",
-        name: "Swiss",
-        price: 0,
-        categoryId: "c-cheeses",
-        categoryName: "Cheeses",
-      }),
-      item({
-        id: "4",
-        name: "Lettuce",
-        price: 0,
-        categoryId: "c-veggies",
-        categoryName: "Veggies",
-      }),
-      item({
-        id: "5",
-        name: "Bacon",
-        price: 1.25,
-        categoryId: "c-addons",
-        categoryName: "Add-ons",
-      }),
-      item({
-        id: "6",
-        name: "12 oz",
-        price: 4,
-        categoryId: "c-soups",
-        categoryName: "Soups",
-      }),
-      item({
-        id: "7",
         name: "Reuben",
         price: 7.75,
         categoryId: "c-hot",
         categoryName: "Hot Sandwiches",
-        description: "Corned beef on rye",
-        image_url: "https://cdn.example/reuben.webp",
       }),
-    ];
-
-    const result = mapMenuApiToWebsiteItems(cats, items);
-
-    expect(result.meats).toEqual([
-      {
-        name: "Roast Beef",
+      item({
+        id: "2",
+        name: "Pastrami",
         price: 7.5,
-        image_url: "https://cdn.example/rb-thumb.webp",
+        categoryId: "c-deli",
+        categoryName: "Deli Favorites",
+      }),
+    ]);
+
+    expect(result.categories.map((c) => c.title)).toEqual([
+      "Hot Sandwiches",
+      "Deli Favorites",
+      "Drinks",
+      "Soft",
+    ]);
+    expect(result.categories.find((c) => c.title === "Drinks")?.items).toEqual([]);
+    expect(result.categories.find((c) => c.title === "Soft")?.items).toEqual([]);
+    expect(result.categories.find((c) => c.title === "Deli Favorites")?.items).toEqual([
+      {
+        name: "Pastrami",
+        price: 7.5,
+        image_url: null,
+        description: null,
       },
     ]);
-    expect(result.breads).toEqual(["White"]);
-    expect(result.cheeses).toEqual(["Swiss"]);
-    expect(result.veggies).toEqual(["Lettuce"]);
-    expect(result.addons).toEqual([{ name: "Bacon", price_display: "+$1.25" }]);
-    expect(result.soup_sizes).toEqual(["12 oz"]);
+  });
+
+  it("should_fill_hot_sandwiches_and_soups_helpers_from_matching_categories", () => {
+    const cats: MenuApiCategory[] = [
+      { id: "c-hot", name: "Hot Sandwiches", display_order: 1, is_active: true },
+      { id: "c-soups", name: "Soups", display_order: 2, is_active: true },
+    ];
+    const result = mapMenuApiToWebsiteItems(cats, [
+      item({
+        id: "1",
+        name: "Reuben",
+        price: 7.75,
+        categoryId: "c-hot",
+        categoryName: "Hot Sandwiches",
+        description: "On rye",
+        image_thumb_url: "https://cdn.example/r.webp",
+      }),
+      item({
+        id: "2",
+        name: "Chili (12 oz)",
+        price: 4,
+        categoryId: "c-soups",
+        categoryName: "Soups",
+      }),
+    ]);
+
+    expect(result.soup_sizes).toEqual(["Chili (12 oz)"]);
     expect(result.hot_sandwiches).toEqual([
       {
         num: "01",
         name: "Reuben",
         price_display: "$7.75",
         accent_price: false,
-        description: "Corned beef on rye",
-        image_url: "https://cdn.example/reuben.webp",
+        description: "On rye",
+        image_url: "https://cdn.example/r.webp",
       },
     ]);
   });
 
-  it("should_still_map_by_item_category_name_when_categories_list_empty", () => {
-    const result = mapMenuApiToWebsiteItems([], [
-      item({
-        id: "1",
-        name: "Roast Beef",
-        price: 7.5,
-        categoryId: "c-meats",
-        categoryName: "Meats",
-      }),
-    ]);
-    expect(result.meats).toEqual([
-      { name: "Roast Beef", price: 7.5, image_url: null },
-    ]);
-    expect(result.hot_sandwiches).toEqual([]);
-  });
-
-  it("should_prefer_thumb_url_then_image_url_for_hover_source", () => {
+  it("should_map_chip_categories_for_build_your_way", () => {
+    const cats: MenuApiCategory[] = [
+      { id: "c-breads", name: "Breads", display_order: 1, is_active: true },
+      { id: "c-addons", name: "Add-ons", display_order: 2, is_active: true },
+    ];
     const result = mapMenuApiToWebsiteItems(cats, [
       item({
         id: "1",
-        name: "A",
-        price: 1,
-        categoryId: "c-meats",
-        categoryName: "Meats",
-        image_url: "https://cdn.example/full.webp",
-        image_thumb_url: null,
-      }),
-    ]);
-    expect(result.meats[0].image_url).toBe("https://cdn.example/full.webp");
-  });
-
-  it("should_number_hot_sandwiches_from_input_order", () => {
-    const result = mapMenuApiToWebsiteItems(cats, [
-      item({
-        id: "1",
-        name: "First",
-        price: 7,
-        categoryId: "c-hot",
-        categoryName: "Hot Sandwiches",
+        name: "White",
+        price: 0,
+        categoryId: "c-breads",
+        categoryName: "Breads",
       }),
       item({
         id: "2",
-        name: "Second",
-        price: 8,
-        categoryId: "c-hot",
-        categoryName: "Hot Sandwiches",
+        name: "Bacon",
+        price: 1.25,
+        categoryId: "c-addons",
+        categoryName: "Add-ons",
       }),
     ]);
-    expect(result.hot_sandwiches.map((h) => h.num)).toEqual(["01", "02"]);
-  });
 
-  it("should_map_deli_favorites_alias_to_meats", () => {
-    const liveCats: MenuApiCategory[] = [
-      {
-        id: "c-deli",
-        name: "Deli Favorites",
-        display_order: 1,
-        is_active: true,
-      },
-    ];
-    const result = mapMenuApiToWebsiteItems(liveCats, [
-      item({
-        id: "1",
-        name: "Pastrami Sandwich",
-        price: 7.5,
-        categoryId: "c-deli",
-        categoryName: "Deli Favorites",
-      }),
-    ]);
-    expect(result.meats).toEqual([
-      { name: "Pastrami Sandwich", price: 7.5, image_url: null },
-    ]);
-  });
-
-  it("should_expose_unmapped_categories_as_other_groups_including_inactive", () => {
-    const liveCats: MenuApiCategory[] = [
-      {
-        id: "c-sides",
-        name: "Sides",
-        display_order: 1,
-        is_active: true,
-      },
-      {
-        id: "c-hotplate",
-        name: "Hot Plate Specials",
-        display_order: 2,
-        is_active: true,
-      },
-      {
-        id: "c-test",
-        name: "Test",
-        display_order: 3,
-        is_active: false,
-      },
-    ];
-    const result = mapMenuApiToWebsiteItems(liveCats, [
-      item({
-        id: "1",
-        name: "Mac & Cheese",
-        price: 3,
-        categoryId: "c-sides",
-        categoryName: "Sides",
-      }),
-      item({
-        id: "2",
-        name: "Pan Fried Chicken Plate",
-        price: 11,
-        categoryId: "c-hotplate",
-        categoryName: "Hot Plate Specials",
-      }),
-      item({
-        id: "3",
-        name: "Test 2",
-        price: 20,
-        categoryId: "c-test",
-        categoryName: "Test",
-      }),
-    ]);
-    expect(result.other_groups).toEqual([
-      {
-        title: "Sides",
-        items: [{ name: "Mac & Cheese", price: 3, image_url: null }],
-      },
-      {
-        title: "Hot Plate Specials",
-        items: [
-          { name: "Pan Fried Chicken Plate", price: 11, image_url: null },
-        ],
-      },
-      {
-        title: "Test",
-        items: [{ name: "Test 2", price: 20, image_url: null }],
-      },
-    ]);
-  });
-
-  it("should_include_items_when_category_missing_from_categories_list", () => {
-    const result = mapMenuApiToWebsiteItems([], [
-      item({
-        id: "1",
-        name: "Orphan Item",
-        price: 9,
-        categoryId: "c-orphan",
-        categoryName: "Sides",
-      }),
-    ]);
-    expect(result.other_groups).toEqual([
-      {
-        title: "Sides",
-        items: [{ name: "Orphan Item", price: 9, image_url: null }],
-      },
-    ]);
+    expect(result.breads).toEqual(["White"]);
+    expect(result.addons).toEqual([{ name: "Bacon", price_display: "+$1.25" }]);
   });
 });

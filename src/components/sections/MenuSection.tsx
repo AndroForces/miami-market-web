@@ -62,20 +62,34 @@ function CategoryPricedGroup({
   title: string;
   rows: WebsiteMenuMeat[];
 }) {
-  if (rows.length === 0) return null;
   return (
-    <div className="mt-10">
+    <div className="mt-10 first:mt-[34px]">
       <h4 className="mb-3.5 font-hanken text-[12px] font-bold tracking-[0.12em] text-green-dark uppercase">
         {title}
       </h4>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-x-11 gap-y-0.5">
-        {rows.map((row) => (
-          <MeatRow key={`${title}-${row.name}`} meat={row} />
-        ))}
-      </div>
+      {rows.length === 0 ? (
+        <p className="font-hanken text-[14px] text-green-dark/45 italic">
+          No items in this category yet
+        </p>
+      ) : (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-x-11 gap-y-0.5">
+          {rows.map((row) => (
+            <MeatRow key={`${title}-${row.name}`} meat={row} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
+
+const CHIP_CATEGORY_NAMES = new Set([
+  "breads",
+  "cheeses",
+  "veggies",
+  "veggies & condiments",
+  "add-ons",
+  "addons",
+]);
 
 export default async function MenuSection() {
   const [{ menu }, items] = await Promise.all([
@@ -89,6 +103,10 @@ export default async function MenuSection() {
     items.cheeses.length > 0 ||
     items.veggies.length > 0 ||
     items.addons.length > 0;
+
+  const pricedCategories = items.categories.filter(
+    (category) => !CHIP_CATEGORY_NAMES.has(category.title.trim().toLowerCase()),
+  );
 
   return (
     <section id="build" className="bg-green-dark py-[90px] text-cream">
@@ -124,19 +142,11 @@ export default async function MenuSection() {
               </p>
             </div>
 
-            {items.meats.length > 0 && (
-              <div className="mt-[34px] grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-x-11 gap-y-0.5">
-                {items.meats.map((m) => (
-                  <MeatRow key={m.name} meat={m} />
-                ))}
-              </div>
-            )}
-
-            {items.other_groups.map((group) => (
+            {pricedCategories.map((category) => (
               <CategoryPricedGroup
-                key={group.title}
-                title={group.title}
-                rows={group.items}
+                key={category.id}
+                title={category.title}
+                rows={category.items}
               />
             ))}
 
