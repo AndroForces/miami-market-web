@@ -33,6 +33,10 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# ...but DO track committed per-environment build/deploy files under infra/.
+!infra/
+!infra/.env.*
+
 # vercel
 .vercel
 
