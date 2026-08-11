@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { OpenStatusContent, StructuredHourRow } from "@/lib/cms";
 import { computeWebsiteStatus } from "@/lib/compute-website-status";
+import { fetchManualStoreClosure } from "@/lib/store-status";
 import type { OpenStatus } from "@/types/status.types";
 
 function mapServerStatus(initial: OpenStatusContent): OpenStatus {
@@ -29,6 +30,24 @@ function mapComputedStatus(status: OpenStatusContent): OpenStatus {
   };
 }
 
+/** Admin's manual store closure (Settings → close store) always wins over posted hours. */
+function applyManualClosure(
+  status: OpenStatus,
+  closure: { is_open: boolean; reason?: string } | null,
+): OpenStatus {
+  if (!closure || closure.is_open) return status;
+
+  return {
+    ...status,
+    statusOpen: false,
+    signWord: "CLOSED",
+    statusLabel: "Closed Right Now",
+    // Never surface the admin close reason on the public site.
+    statusSub: "Temporarily closed — check back soon.",
+    statusDot: "#D2452A",
+  };
+}
+
 export function useOpenStatus(
   structuredHours: StructuredHourRow[],
   initial: OpenStatusContent,
@@ -38,16 +57,25 @@ export function useOpenStatus(
   );
 
   useEffect(() => {
-    const update = () => {
-      if (structuredHours.length > 0) {
-        setStatus(mapComputedStatus(computeWebsiteStatus(structuredHours)));
-      } else {
-        setStatus(mapServerStatus(initial));
-      }
+    let cancelled = false;
+
+    const update = async () => {
+      const base =
+        structuredHours.length > 0
+          ? mapComputedStatus(computeWebsiteStatus(structuredHours))
+          : mapServerStatus(initial);
+
+      const closure = await fetchManualStoreClosure();
+      if (cancelled) return;
+      setStatus(applyManualClosure(base, closure));
     };
+
     update();
     const id = setInterval(update, 60000);
-    return () => clearInterval(id);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, [structuredHours, initial]);
 
   return status;

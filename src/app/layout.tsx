@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import favicon from "./image.png";
 import { getSiteSettingsForMetadata } from "@/lib/cms";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -10,11 +9,16 @@ export async function generateMetadata(): Promise<Metadata> {
     title: site.seo_title,
     description: site.seo_description,
     icons: {
-      icon: favicon.src,
-      apple: favicon.src,
+      icon: [{ url: "/favicon.ico" }, { url: "/images/logo.png", type: "image/png" }],
+      apple: "/images/logo.png",
     },
   };
 }
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
 
 export default function RootLayout({
   children,

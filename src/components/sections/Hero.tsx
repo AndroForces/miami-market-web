@@ -7,7 +7,7 @@ export default async function Hero() {
   return (
     <section
       id="top"
-      className="relative mx-auto grid max-w-[1240px] grid-cols-[repeat(auto-fit,minmax(330px,1fr))] items-center gap-10 px-6 pt-14 pb-6"
+      className="relative mx-auto grid max-w-[1240px] grid-cols-1 items-center gap-10 px-4 pt-12 pb-6 sm:grid-cols-[repeat(auto-fit,minmax(280px,1fr))] sm:px-6 sm:pt-14"
     >
       <div>
         <span className="inline-flex animate-rise items-center gap-[9px] rounded-full bg-green/12 px-4 py-[9px] text-[12.5px] font-extrabold tracking-[0.16em] text-green-dark uppercase">

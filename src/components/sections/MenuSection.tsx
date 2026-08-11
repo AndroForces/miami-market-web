@@ -1,12 +1,16 @@
-import type { MenuMeat } from "@/lib/cms";
+import { MenuItemHoverName } from "@/components/sections/MenuItemHoverName";
 import { getWebsiteContent } from "@/lib/cms";
+import { getWebsiteMenuItems } from "@/lib/menu-api";
+import type { WebsiteMenuMeat } from "@/lib/menu-api.types";
 
-function MeatRow({ meat }: { meat: MenuMeat }) {
+function MeatRow({ meat }: { meat: WebsiteMenuMeat }) {
   return (
     <div className="flex items-baseline gap-2 border-b border-green-dark/7 py-2">
-      <span className="font-cormorant text-[17px] font-medium tracking-[0.01em]">
-        {meat.name}
-      </span>
+      <MenuItemHoverName
+        name={meat.name}
+        imageUrl={meat.image_url}
+        className="font-cormorant text-[17px] font-medium tracking-[0.01em]"
+      />
       <span className="flex-1 -translate-y-[5px] border-b-2 border-dotted border-green-dark/26" />
       <span className="font-bricolage text-[15.5px] font-extrabold text-accent">
         ${meat.price.toFixed(2)}
@@ -51,9 +55,58 @@ function BuildGroup({
   );
 }
 
+function CategoryPricedGroup({
+  title,
+  rows,
+}: {
+  title: string;
+  rows: WebsiteMenuMeat[];
+}) {
+  return (
+    <div className="mt-10 first:mt-[34px]">
+      <h4 className="mb-3.5 font-hanken text-[12px] font-bold tracking-[0.12em] text-green-dark uppercase">
+        {title}
+      </h4>
+      {rows.length === 0 ? (
+        <p className="font-hanken text-[14px] text-green-dark/45 italic">
+          No items in this category yet
+        </p>
+      ) : (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-x-11 gap-y-0.5">
+          {rows.map((row) => (
+            <MeatRow key={`${title}-${row.name}`} meat={row} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const CHIP_CATEGORY_NAMES = new Set([
+  "breads",
+  "cheeses",
+  "veggies",
+  "veggies & condiments",
+  "add-ons",
+  "addons",
+]);
+
 export default async function MenuSection() {
-  const { menu } = await getWebsiteContent();
+  const [{ menu }, items] = await Promise.all([
+    getWebsiteContent(),
+    getWebsiteMenuItems(),
+  ]);
   const menuCopy = menu.copy;
+
+  const hasBuildYourWay =
+    items.breads.length > 0 ||
+    items.cheeses.length > 0 ||
+    items.veggies.length > 0 ||
+    items.addons.length > 0;
+
+  const pricedCategories = items.categories.filter(
+    (category) => !CHIP_CATEGORY_NAMES.has(category.title.trim().toLowerCase()),
+  );
 
   return (
     <section id="build" className="bg-green-dark py-[90px] text-cream">
@@ -89,91 +142,117 @@ export default async function MenuSection() {
               </p>
             </div>
 
-            <div className="mt-[34px] grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-x-11 gap-y-0.5">
-              {menu.meats.map((m) => (
-                <MeatRow key={m.name} meat={m} />
-              ))}
-            </div>
-
-            <div className="my-10 flex items-center gap-4">
-              <span className="h-px flex-1 bg-green-dark/18" />
-              <span className="font-cormorant text-[11px] tracking-[0.26em] text-accent uppercase">
-                {menuCopy.build_your_way_label}
-              </span>
-              <span className="h-px flex-1 bg-green-dark/18" />
-            </div>
-
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-[26px]">
-              <BuildGroup title={menuCopy.breads_group_title} items={menu.breads} />
-              <BuildGroup title={menuCopy.cheeses_group_title} items={menu.cheeses} />
-              <BuildGroup
-                title={menuCopy.veggies_group_title}
-                items={menu.veggies}
-                addOns={menu.addons}
+            {pricedCategories.map((category) => (
+              <CategoryPricedGroup
+                key={category.id}
+                title={category.title}
+                rows={category.items}
               />
-            </div>
-          </div>
-        </div>
-
-        <div className="animate-reveal-view mt-[34px] flex flex-wrap items-center justify-between gap-5 rounded-mm bg-accent p-[30px]">
-          <div>
-            <h3 className="m-0 font-playfair text-[28px] font-bold text-white">
-              {menuCopy.soups_heading}
-            </h3>
-            <p className="mt-2 font-hanken text-base text-white/92">
-              {menuCopy.soups_subheading}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2.5 font-hanken text-[14px] font-semibold text-white">
-            {menu.soup_sizes.map((s) => (
-              <span
-                key={s}
-                className="rounded-full bg-black/18 px-4 py-2.5"
-              >
-                {s}
-              </span>
             ))}
+
+            {hasBuildYourWay && (
+              <>
+                <div className="my-10 flex items-center gap-4">
+                  <span className="h-px flex-1 bg-green-dark/18" />
+                  <span className="font-cormorant text-[11px] tracking-[0.26em] text-accent uppercase">
+                    {menuCopy.build_your_way_label}
+                  </span>
+                  <span className="h-px flex-1 bg-green-dark/18" />
+                </div>
+
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-[26px]">
+                  {items.breads.length > 0 && (
+                    <BuildGroup
+                      title={menuCopy.breads_group_title}
+                      items={items.breads}
+                    />
+                  )}
+                  {items.cheeses.length > 0 && (
+                    <BuildGroup
+                      title={menuCopy.cheeses_group_title}
+                      items={items.cheeses}
+                    />
+                  )}
+                  {(items.veggies.length > 0 || items.addons.length > 0) && (
+                    <BuildGroup
+                      title={menuCopy.veggies_group_title}
+                      items={items.veggies}
+                      addOns={items.addons}
+                    />
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
-        <div className="animate-reveal-view relative mt-[70px]">
-          <span className="pointer-events-none absolute -top-[52px] -left-0.5 font-bricolage text-[clamp(70px,13vw,160px)] leading-none font-extrabold tracking-[-0.04em] whitespace-nowrap text-cream/5">
-            {menuCopy.hot_sandwiches_watermark}
-          </span>
-          <h3 className="relative m-0 font-playfair text-[clamp(26px,3.5vw,40px)] font-bold text-cream">
-            {menuCopy.hot_sandwiches_heading}
-          </h3>
-          <p className="relative mt-2 font-hanken text-[12px] font-bold tracking-[0.1em] text-green-light uppercase">
-            {menuCopy.hot_sandwiches_subheading}
-          </p>
-        </div>
-        <div className="mt-[26px] grid grid-cols-[repeat(auto-fit,minmax(270px,1fr))] gap-[18px]">
-          {menu.hot_sandwiches.map((h) => (
-            <div
-              key={h.num}
-              className="animate-reveal-view relative overflow-hidden rounded-mm border-t-4 border-accent bg-cream px-6 pt-[26px] pb-6 text-green-dark transition-[transform,box-shadow] duration-200 hover:-translate-y-[7px] hover:shadow-[0_26px_46px_-22px_rgba(0,0,0,0.6)]"
-            >
-              <span className="pointer-events-none absolute right-3.5 -bottom-[18px] font-bricolage text-[98px] leading-none font-extrabold text-green-dark/6">
-                {h.num}
-              </span>
-              <span
-                className={`absolute top-[18px] right-[18px] rounded-full px-[13px] py-[7px] font-bricolage text-[15px] font-extrabold ${
-                  h.accent_price
-                    ? "bg-accent text-white"
-                    : "bg-green-dark text-cream"
-                }`}
-              >
-                {h.price_display}
-              </span>
-              <h4 className="relative mt-0.5 max-w-[74%] font-playfair text-[23px] font-bold">
-                {h.name}
-              </h4>
-              <p className="relative mt-2.5 font-hanken text-[15px] leading-snug text-text-muted">
-                {h.description}
+        {items.soup_sizes.length > 0 && (
+          <div className="animate-reveal-view mt-[34px] flex flex-wrap items-center justify-between gap-5 rounded-mm bg-accent p-[30px]">
+            <div>
+              <h3 className="m-0 font-playfair text-[28px] font-bold text-white">
+                {menuCopy.soups_heading}
+              </h3>
+              <p className="mt-2 font-hanken text-base text-white/92">
+                {menuCopy.soups_subheading}
               </p>
             </div>
-          ))}
-        </div>
+            <div className="flex flex-wrap gap-2.5 font-hanken text-[14px] font-semibold text-white">
+              {items.soup_sizes.map((s) => (
+                <span
+                  key={s}
+                  className="rounded-full bg-black/18 px-4 py-2.5"
+                >
+                  {s}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {items.hot_sandwiches.length > 0 && (
+          <>
+            <div className="animate-reveal-view relative mt-[70px]">
+              <span className="pointer-events-none absolute -top-[52px] -left-0.5 font-bricolage text-[clamp(70px,13vw,160px)] leading-none font-extrabold tracking-[-0.04em] whitespace-nowrap text-cream/5">
+                {menuCopy.hot_sandwiches_watermark}
+              </span>
+              <h3 className="relative m-0 font-playfair text-[clamp(26px,3.5vw,40px)] font-bold text-cream">
+                {menuCopy.hot_sandwiches_heading}
+              </h3>
+              <p className="relative mt-2 font-hanken text-[12px] font-bold tracking-[0.1em] text-green-light uppercase">
+                {menuCopy.hot_sandwiches_subheading}
+              </p>
+            </div>
+            <div className="mt-[26px] grid grid-cols-[repeat(auto-fit,minmax(270px,1fr))] gap-[18px]">
+              {items.hot_sandwiches.map((h) => (
+                <div
+                  key={h.num}
+                  className="animate-reveal-view relative overflow-hidden rounded-mm border-t-4 border-accent bg-cream px-6 pt-[26px] pb-6 text-green-dark transition-[transform,box-shadow] duration-200 hover:-translate-y-[7px] hover:shadow-[0_26px_46px_-22px_rgba(0,0,0,0.6)]"
+                >
+                  <span className="pointer-events-none absolute right-3.5 -bottom-[18px] font-bricolage text-[98px] leading-none font-extrabold text-green-dark/6">
+                    {h.num}
+                  </span>
+                  <span
+                    className={`absolute top-[18px] right-[18px] rounded-full px-[13px] py-[7px] font-bricolage text-[15px] font-extrabold ${
+                      h.accent_price
+                        ? "bg-accent text-white"
+                        : "bg-green-dark text-cream"
+                    }`}
+                  >
+                    {h.price_display}
+                  </span>
+                  <MenuItemHoverName
+                    name={h.name}
+                    imageUrl={h.image_url}
+                    className="relative mt-0.5 max-w-[74%] font-playfair text-[23px] font-bold"
+                  />
+                  <p className="relative mt-2.5 font-hanken text-[15px] leading-snug text-text-muted">
+                    {h.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </section>
   );

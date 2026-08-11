@@ -35,6 +35,9 @@
   --animate-rise: mm-rise 0.6s ease both;
   --animate-ping: mm-ping 1.9s ease-out infinite;
   --animate-reveal: mm-reveal 0.85s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-hotplate-progress: mm-hotplate-progress 4.8s linear forwards;
+  --animate-hotplate-shimmer: mm-hotplate-shimmer 3.2s ease-in-out infinite;
+  --animate-hotplate-glow: mm-hotplate-glow 9s ease-in-out infinite;
 }
 
 @keyframes mm-marquee {
@@ -126,6 +129,50 @@
   }
 }
 
+@keyframes mm-hotplate-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes mm-hotplate-shimmer {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateX(-120%);
+  }
+  50% {
+    opacity: 0.85;
+    transform: translateX(120%);
+  }
+}
+
+@keyframes mm-hotplate-glow {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(8px, -6px) scale(1.06);
+  }
+}
+
+@keyframes mm-hotplate-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
 @layer base {
   html {
     @apply scroll-smooth;
@@ -175,6 +222,56 @@
     animation: mm-reveal 0.85s cubic-bezier(0.2, 0.7, 0.2, 1) both;
     animation-timeline: view();
     animation-range: entry 0% cover 45%;
+  }
+
+  .hot-plate-browse-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(20, 61, 34, 0.28) transparent;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .hot-plate-browse-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .hot-plate-browse-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .hot-plate-browse-scroll::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(20, 61, 34, 0.22);
+  }
+
+  .hot-plate-browse-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(20, 61, 34, 0.38);
+  }
+
+  .nav-scroll-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .nav-scroll-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hot-plate-slide-content {
+    animation: mm-hotplate-content-in 0.75s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  .hot-plate-stage-glow {
+    animation: var(--animate-hotplate-glow);
+  }
+
+  .hot-plate-shimmer-line {
+    animation: var(--animate-hotplate-shimmer);
+  }
+
+  .hot-plate-progress-bar {
+    transform-origin: left center;
+    animation: var(--animate-hotplate-progress);
   }
 }
 

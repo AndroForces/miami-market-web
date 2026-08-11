@@ -1,3 +1,10 @@
+import { getBackendRootUrl, resolveMediaUrl } from "@/lib/media-url";
+import {
+  mapHotPlateCalendarFromApi,
+  type HotPlateCalendarApi,
+  type HotPlateMonth,
+} from "@/data/hot-plate-calendar";
+
 export interface HeroContent {
   badge_text: string;
   heading_line1: string;
@@ -167,17 +174,39 @@ export interface WebsiteContent {
 }
 
 function getBackendUrl(): string {
-  const url = process.env.NEXT_PUBLIC_BACKEND_URL;
+  const url = getBackendRootUrl();
   if (!url) {
-    throw new Error('NEXT_PUBLIC_BACKEND_URL is not set');
+    throw new Error("NEXT_PUBLIC_BACKEND_URL is not set");
   }
-  return url.replace(/\/$/, '');
+  return url;
+}
+
+/** Absolute media URLs — same contract admin uses (`image_url` from API). */
+function withResolvedMediaUrls(content: WebsiteContent): WebsiteContent {
+  return {
+    ...content,
+    hero: {
+      ...content.hero,
+      image_url: resolveMediaUrl(content.hero.image_url),
+    },
+    about: {
+      ...content.about,
+      image1_url: resolveMediaUrl(content.about.image1_url),
+      image2_url: resolveMediaUrl(content.about.image2_url),
+      image3_url: resolveMediaUrl(content.about.image3_url),
+    },
+    hot_plate: {
+      ...content.hot_plate,
+      image_url: resolveMediaUrl(content.hot_plate.image_url),
+      menu_pdf_url: resolveMediaUrl(content.hot_plate.menu_pdf_url),
+    },
+  };
 }
 
 /** No fallback data — a failed fetch throws and fails the render. */
 export async function getWebsiteContent(): Promise<WebsiteContent> {
   const res = await fetch(`${getBackendUrl()}/api/v1/web/website-content`, {
-    next: { revalidate: 300 },
+    next: { revalidate: 60 },
   });
 
   if (!res.ok) {
@@ -185,12 +214,26 @@ export async function getWebsiteContent(): Promise<WebsiteContent> {
   }
 
   const body = await res.json();
-  return body.data as WebsiteContent;
+  return withResolvedMediaUrls(body.data as WebsiteContent);
+}
+
+/** Monthly Hot Plate day calendar — separate from the aggregate payload. */
+export async function getHotPlateCalendar(): Promise<HotPlateMonth[]> {
+  const res = await fetch(`${getBackendUrl()}/api/v1/web/hot-plate-calendar`, {
+    next: { revalidate: 60 },
+  });
+
+  if (!res.ok) {
+    throw new Error(`CMS fetch failed: ${res.status}`);
+  }
+
+  const body = await res.json();
+  return mapHotPlateCalendarFromApi(body.data as HotPlateCalendarApi);
 }
 
 export async function getSiteSettingsForMetadata(): Promise<SiteSettingsContent> {
   const res = await fetch(`${getBackendUrl()}/api/v1/web/site-settings`, {
-    next: { revalidate: 300 },
+    next: { revalidate: 60 },
   });
 
   if (!res.ok) {
