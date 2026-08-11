@@ -154,22 +154,6 @@ export default function VisitSectionClient({
               className="absolute inset-0 bg-[linear-gradient(135deg,#e8f5ec_0%,#faf4e8_100%)]"
             />
           )}
-          <div className="absolute top-[18px] left-[18px] z-3 inline-flex items-center gap-[7px] rounded-full bg-green-dark px-4 py-[9px] font-bricolage text-[13px] font-extrabold tracking-wide text-cream shadow-[0_10px_22px_-10px_rgba(0,0,0,0.5)]">
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#7BD68C"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z" />
-              <circle cx="12" cy="10" r="2.5" />
-            </svg>
-            {site.map_overlay_label}
-          </div>
         </div>
       </div>
     </section>

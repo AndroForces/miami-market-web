@@ -98,24 +98,6 @@ export interface SocialLink {
   label: string;
 }
 
-export interface MenuMeat {
-  name: string;
-  price: number;
-}
-
-export interface MenuAddon {
-  name: string;
-  price_display: string;
-}
-
-export interface HotSandwichItem {
-  num: string;
-  name: string;
-  price_display: string;
-  accent_price: boolean;
-  description: string;
-}
-
 export interface ScheduleRow {
   day: string;
   idx: number;
@@ -145,13 +127,6 @@ export interface OpenStatusContent {
 
 export interface MenuBlockContent {
   copy: MenuCopyContent;
-  meats: MenuMeat[];
-  breads: string[];
-  cheeses: string[];
-  veggies: string[];
-  addons: MenuAddon[];
-  hot_sandwiches: HotSandwichItem[];
-  soup_sizes: string[];
 }
 
 export interface HoursBlockContent {
