@@ -61,6 +61,8 @@ export interface MenuCopyContent {
   hot_sandwiches_subheading: string;
   soups_category_id: string | null;
   hot_sandwiches_category_id: string | null;
+  soups_item_ids: string[];
+  hot_sandwiches_item_ids: string[];
 }
 
 export interface HoursCopyContent {

@@ -44,6 +44,21 @@ function isShownOnWebsite(item: MenuApiItem): boolean {
   return item.show_on_website !== false;
 }
 
+/**
+ * When `itemIds` is non-empty, only those IDs are included (checkbox selection).
+ * When empty/omitted, all website-visible items in the category are included.
+ */
+function pickSectionItems(
+  catItems: MenuApiItem[],
+  itemIds: string[] | null | undefined,
+): MenuApiItem[] {
+  if (itemIds && itemIds.length > 0) {
+    const allow = new Set(itemIds);
+    return catItems.filter((item) => allow.has(item.id));
+  }
+  return catItems.filter(isShownOnWebsite);
+}
+
 function emptyWebsiteMenuItems(): WebsiteMenuItems {
   return {
     categories: [],
@@ -98,6 +113,8 @@ export function mapMenuApiToWebsiteItems(
   const hotSandwichesCategoryId = bindings.hotSandwichesCategoryId ?? null;
   const soupsBoundById = Boolean(soupsCategoryId);
   const hotBoundById = Boolean(hotSandwichesCategoryId);
+  const soupsItemIds = bindings.soupsItemIds ?? [];
+  const hotItemIds = bindings.hotSandwichesItemIds ?? [];
 
   for (const category of sortedCategories) {
     seenIds.add(category.id);
@@ -128,25 +145,21 @@ export function mapMenuApiToWebsiteItems(
       items: catItems.map(toPricedItem),
     });
 
-    const websiteItems = catItems.filter(isShownOnWebsite);
-
     const fillSoupsByName = !soupsBoundById && normalized === "soups";
     const fillSoupsById = soupsBoundById && category.id === soupsCategoryId;
     if (fillSoupsByName || fillSoupsById) {
-      result.soup_sizes.push(...websiteItems.map((i) => i.name));
+      result.soup_sizes.push(...pickSectionItems(catItems, soupsItemIds).map((i) => i.name));
     }
 
     const fillHotByName = !hotBoundById && normalized === "hot sandwiches";
     const fillHotById = hotBoundById && category.id === hotSandwichesCategoryId;
     if (fillHotByName || fillHotById) {
-      for (const item of websiteItems) {
+      for (const item of pickSectionItems(catItems, hotItemIds)) {
         pushHotSandwich(result, item);
       }
     }
   }
 
-  // Bound IDs whose category wasn't in the active categories list (e.g. inactive)
-  // still resolve from orphan/item buckets.
   for (const [categoryId, catItems] of itemsByCategoryId) {
     if (seenIds.has(categoryId) || catItems.length === 0) continue;
     const title = catItems[0]?.category.name ?? "Menu";
@@ -156,12 +169,11 @@ export function mapMenuApiToWebsiteItems(
       items: catItems.map(toPricedItem),
     });
 
-    const websiteItems = catItems.filter(isShownOnWebsite);
     if (soupsBoundById && categoryId === soupsCategoryId) {
-      result.soup_sizes.push(...websiteItems.map((i) => i.name));
+      result.soup_sizes.push(...pickSectionItems(catItems, soupsItemIds).map((i) => i.name));
     }
     if (hotBoundById && categoryId === hotSandwichesCategoryId) {
-      for (const item of websiteItems) {
+      for (const item of pickSectionItems(catItems, hotItemIds)) {
         pushHotSandwich(result, item);
       }
     }

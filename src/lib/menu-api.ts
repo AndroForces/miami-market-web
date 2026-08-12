@@ -38,7 +38,7 @@ async function fetchJson<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-/** Website-visible items (may include unavailable-for-order items). */
+/** All menu items for website section mapping (visibility decided in mapper / CMS). */
 async function fetchAllWebsiteItems(): Promise<MenuApiItem[]> {
   const limit = 100;
   let page = 1;
@@ -47,7 +47,7 @@ async function fetchAllWebsiteItems(): Promise<MenuApiItem[]> {
 
   while (page <= totalPages) {
     const body = await fetchJson<ItemsBody>(
-      `/api/v1/menu/items?show_on_website=true&limit=${limit}&page=${page}`,
+      `/api/v1/menu/items?limit=${limit}&page=${page}`,
     );
     items.push(...body.data.items);
     totalPages = body.data.total_pages;

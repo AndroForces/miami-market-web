@@ -29,6 +29,9 @@ export interface MenuApiItem {
 export interface WebsiteMenuSectionBindings {
   soupsCategoryId?: string | null;
   hotSandwichesCategoryId?: string | null;
+  /** Empty / omitted = all website-visible items in the category. */
+  soupsItemIds?: string[] | null;
+  hotSandwichesItemIds?: string[] | null;
 }
 
 export interface WebsiteMenuMeat {

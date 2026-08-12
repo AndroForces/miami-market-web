@@ -225,4 +225,43 @@ describe("mapMenuApiToWebsiteItems", () => {
     expect(result.soup_sizes).toEqual(["Chili (12 oz)"]);
     expect(result.hot_sandwiches.map((h) => h.name)).toEqual(["Hot Italian"]);
   });
+
+  it("should_include_only_checked_item_ids_for_hot_sandwiches_when_provided", () => {
+    const cats: MenuApiCategory[] = [
+      { id: "c-hot", name: "Hot Sandwiches", display_order: 1, is_active: true },
+    ];
+    const result = mapMenuApiToWebsiteItems(
+      cats,
+      [
+        item({
+          id: "1",
+          name: "Reuben",
+          price: 7.75,
+          categoryId: "c-hot",
+          categoryName: "Hot Sandwiches",
+        }),
+        item({
+          id: "2",
+          name: "Hot Italian",
+          price: 7.75,
+          categoryId: "c-hot",
+          categoryName: "Hot Sandwiches",
+        }),
+        item({
+          id: "3",
+          name: "Miami Rascal",
+          price: 7.75,
+          categoryId: "c-hot",
+          categoryName: "Hot Sandwiches",
+          show_on_website: false,
+        }),
+      ],
+      {
+        hotSandwichesCategoryId: "c-hot",
+        hotSandwichesItemIds: ["1", "3"],
+      },
+    );
+
+    expect(result.hot_sandwiches.map((h) => h.name)).toEqual(["Reuben", "Miami Rascal"]);
+  });
 });
