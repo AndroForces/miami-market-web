@@ -8,8 +8,6 @@ interface HotPlateCalendarProps {
   headingPrefix: string;
   headingAccent: string;
   description: string;
-  ctaLabel: string;
-  menuPdfUrl?: string | null;
 }
 
 export default function HotPlateCalendar({
@@ -19,8 +17,6 @@ export default function HotPlateCalendar({
   headingPrefix,
   headingAccent,
   description,
-  ctaLabel,
-  menuPdfUrl,
 }: HotPlateCalendarProps) {
   return (
     <HotPlateLiveBoardClient
@@ -30,8 +26,6 @@ export default function HotPlateCalendar({
       headingPrefix={headingPrefix}
       headingAccent={headingAccent}
       description={description}
-      ctaLabel={ctaLabel}
-      menuPdfUrl={menuPdfUrl}
     />
   );
 }

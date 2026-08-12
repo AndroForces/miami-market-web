@@ -3,6 +3,7 @@ import { getWebsiteContent } from "@/lib/cms";
 
 export default async function Hero() {
   const { hero, site } = await getWebsiteContent();
+  const sealRing = `${hero.seal_ring_text.trim()} `;
 
   return (
     <section
@@ -79,7 +80,7 @@ export default async function Hero() {
             className="font-bricolage text-[15.5px] font-bold tracking-[3px]"
           >
             <textPath href="#mm-circ" startOffset="0">
-              ★ FAMILY OWNED ★ MILFORD OHIO ★ MADE FROM SCRATCH{" "}
+              {sealRing}
             </textPath>
           </text>
           <text x="100" y="92" textAnchor="middle" fill="#D2452A" fontSize="30">
@@ -92,14 +93,14 @@ export default async function Hero() {
             fill="#FAF4E8"
             className="font-bricolage text-[22px] font-extrabold tracking-[2px]"
           >
-            DELI
+            {hero.seal_center_text}
           </text>
         </svg>
         <div className="absolute -top-4 -right-2.5 animate-bob rounded-full border-2 border-accent bg-white px-[18px] py-[13px] font-bricolage text-sm font-extrabold text-green-dark shadow-[0_14px_30px_-12px_rgba(20,61,34,0.45)]">
-          Beer &amp; Wine
+          {hero.float_badge_top}
         </div>
         <div className="absolute right-[-14px] bottom-[34px] animate-float rounded-full bg-gold px-[18px] py-[13px] font-bricolage text-sm font-extrabold text-green-dark shadow-[0_14px_30px_-12px_rgba(20,61,34,0.45)]">
-          Drive-Thru
+          {hero.float_badge_bottom}
         </div>
       </div>
     </section>

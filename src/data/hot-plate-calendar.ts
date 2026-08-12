@@ -114,6 +114,30 @@ export function findCurrentMonthKey(
   return match ? monthKey(match) : monthKey(months[0]);
 }
 
+/** Empty month shell for the live board when CMS has no entry yet. */
+export function emptyHotPlateMonth(year: number, month: number): HotPlateMonth {
+  return {
+    year,
+    month,
+    title: monthLabel(year, month),
+    days: [],
+  };
+}
+
+/**
+ * Always resolve the real calendar month for the website board.
+ * Never fall back to a previous published month (e.g. August when September is empty).
+ */
+export function resolveActiveHotPlateMonth(
+  months: HotPlateMonth[],
+  referenceDate: Date = new Date(),
+): HotPlateMonth {
+  const year = referenceDate.getFullYear();
+  const month = referenceDate.getMonth() + 1;
+  const match = months.find((m) => m.year === year && m.month === month);
+  return match ?? emptyHotPlateMonth(year, month);
+}
+
 /** Column index for Mon–Sun grid (Mon = 0 … Sat = 5, Sun = 6). */
 export function weekdayColumn(date: Date): number {
   const day = date.getDay();
@@ -217,6 +241,8 @@ export type HotPlateDayWithMeta = HotPlateDayEntry & {
   dateLabel: string;
   /** Stable key when a day has multiple entries. */
   entryKey: string;
+  /** True when this calendar day has no CMS menu entry. */
+  isUnconfigured?: boolean;
 };
 
 export type HotPlateWeekGroup = {
@@ -439,19 +465,21 @@ export function groupHotPlateByWeek(
     const last = currentWeek[currentWeek.length - 1];
     const containsToday =
       showToday && currentWeek.some((d) => d.day === todayDay);
+    const uniqueDays = new Set(currentWeek.map((d) => d.day)).size;
 
     weeks.push({
       id: `week-${first.day}`,
       label: `Week of ${first.dateLabel}`,
       weekNumber: weeks.length + 1,
       dateRange: formatWeekDateRange(year, monthNum, first.day, last.day),
-      dayCount: currentWeek.length,
+      dayCount: uniqueDays,
       isCurrentWeek: containsToday,
       days: currentWeek,
     });
     currentWeek = [];
   };
 
+  // Include every calendar day in the month so the board shows a full month.
   for (let day = 1; day <= lastDay; day += 1) {
     const date = new Date(year, monthNum - 1, day);
     const wcol = weekdayColumn(date);
@@ -460,14 +488,25 @@ export function groupHotPlateByWeek(
       flushWeek();
     }
 
-    const entries = byDay.get(day);
-    if (!entries || entries.length === 0) continue;
-
     const names = weekdayNames(date);
     const dateLabel = date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
     });
+    const entries = byDay.get(day);
+
+    if (!entries || entries.length === 0) {
+      currentWeek.push({
+        day,
+        items: "",
+        weekday: names.long,
+        weekdayShort: names.short,
+        dateLabel,
+        entryKey: `${year}-${monthNum}-${day}-unconfigured`,
+        isUnconfigured: true,
+      });
+      continue;
+    }
 
     for (const { entry, index } of entries) {
       currentWeek.push({

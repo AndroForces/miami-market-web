@@ -1,5 +1,10 @@
 import { getBackendRootUrl, resolveMediaUrl } from "@/lib/media-url";
-import type { MenuApiCategory, MenuApiItem, WebsiteMenuItems } from "@/lib/menu-api.types";
+import type {
+  MenuApiCategory,
+  MenuApiItem,
+  WebsiteMenuItems,
+  WebsiteMenuSectionBindings,
+} from "@/lib/menu-api.types";
 import { mapMenuApiToWebsiteItems } from "@/lib/menu-section-map";
 
 function getBackendUrl(): string {
@@ -33,7 +38,8 @@ async function fetchJson<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-async function fetchAllAvailableItems(): Promise<MenuApiItem[]> {
+/** Website-visible items (may include unavailable-for-order items). */
+async function fetchAllWebsiteItems(): Promise<MenuApiItem[]> {
   const limit = 100;
   let page = 1;
   let totalPages = 1;
@@ -41,7 +47,7 @@ async function fetchAllAvailableItems(): Promise<MenuApiItem[]> {
 
   while (page <= totalPages) {
     const body = await fetchJson<ItemsBody>(
-      `/api/v1/menu/items?available=true&limit=${limit}&page=${page}`,
+      `/api/v1/menu/items?show_on_website=true&limit=${limit}&page=${page}`,
     );
     items.push(...body.data.items);
     totalPages = body.data.total_pages;
@@ -56,8 +62,10 @@ async function fetchAllAvailableItems(): Promise<MenuApiItem[]> {
 }
 
 /** Public Menu catalogue shaped for the website Menu section. */
-export async function getWebsiteMenuItems(): Promise<WebsiteMenuItems> {
+export async function getWebsiteMenuItems(
+  bindings: WebsiteMenuSectionBindings = {},
+): Promise<WebsiteMenuItems> {
   const categoriesBody = await fetchJson<CategoriesBody>("/api/v1/menu/categories");
-  const items = await fetchAllAvailableItems();
-  return mapMenuApiToWebsiteItems(categoriesBody.data.categories, items);
+  const items = await fetchAllWebsiteItems();
+  return mapMenuApiToWebsiteItems(categoriesBody.data.categories, items, bindings);
 }

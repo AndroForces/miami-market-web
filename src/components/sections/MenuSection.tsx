@@ -92,11 +92,12 @@ const CHIP_CATEGORY_NAMES = new Set([
 ]);
 
 export default async function MenuSection() {
-  const [{ menu }, items] = await Promise.all([
-    getWebsiteContent(),
-    getWebsiteMenuItems(),
-  ]);
+  const { menu } = await getWebsiteContent();
   const menuCopy = menu.copy;
+  const items = await getWebsiteMenuItems({
+    soupsCategoryId: menuCopy.soups_category_id ?? null,
+    hotSandwichesCategoryId: menuCopy.hot_sandwiches_category_id ?? null,
+  });
 
   const hasBuildYourWay =
     items.breads.length > 0 ||
