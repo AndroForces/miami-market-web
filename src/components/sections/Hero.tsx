@@ -3,7 +3,7 @@ import { getWebsiteContent } from "@/lib/cms";
 
 export default async function Hero() {
   const { hero, site } = await getWebsiteContent();
-  const sealRing = `${hero.seal_ring_text.trim()} `;
+  const sealRing = `${(hero.seal_ring_text ?? "").trim()} `;
 
   return (
     <section

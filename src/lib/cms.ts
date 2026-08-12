@@ -169,8 +169,8 @@ function withResolvedMediaUrls(content: WebsiteContent): WebsiteContent {
   return {
     ...content,
     hero: {
-      ...content.hero,
-      image_url: resolveMediaUrl(content.hero.image_url),
+      ...normalizeHero(content.hero),
+      image_url: resolveMediaUrl(content.hero?.image_url ?? null),
     },
     about: {
       ...content.about,
@@ -183,6 +183,33 @@ function withResolvedMediaUrls(content: WebsiteContent): WebsiteContent {
       image_url: resolveMediaUrl(content.hot_plate.image_url),
       menu_pdf_url: resolveMediaUrl(content.hot_plate.menu_pdf_url),
     },
+  };
+}
+
+/** Defaults for seal/float fields when an older API payload omits them. */
+const DEFAULT_HERO_SEAL = {
+  float_badge_top: "Beer & Wine",
+  float_badge_bottom: "Drive-Thru",
+  seal_ring_text: "★ FAMILY OWNED ★ MILFORD OHIO ★ MADE FROM SCRATCH",
+  seal_center_text: "DELI",
+} as const;
+
+function normalizeHero(
+  hero: Partial<HeroContent> | null | undefined,
+): HeroContent {
+  return {
+    badge_text: hero?.badge_text ?? "",
+    heading_line1: hero?.heading_line1 ?? "",
+    heading_line2: hero?.heading_line2 ?? "",
+    heading_line3: hero?.heading_line3 ?? "",
+    subheadline: hero?.subheadline ?? "",
+    float_badge_top: hero?.float_badge_top ?? DEFAULT_HERO_SEAL.float_badge_top,
+    float_badge_bottom:
+      hero?.float_badge_bottom ?? DEFAULT_HERO_SEAL.float_badge_bottom,
+    seal_ring_text: hero?.seal_ring_text ?? DEFAULT_HERO_SEAL.seal_ring_text,
+    seal_center_text:
+      hero?.seal_center_text ?? DEFAULT_HERO_SEAL.seal_center_text,
+    image_url: hero?.image_url ?? null,
   };
 }
 
