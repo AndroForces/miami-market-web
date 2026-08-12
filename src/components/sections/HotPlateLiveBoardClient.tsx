@@ -2,14 +2,12 @@
 
 import { useMemo } from "react";
 import {
-  findCurrentMonthKey,
   groupHotPlateByWeek,
-  monthKey,
   parseClosedDayMessage,
   parseHotPlateItems,
   parseIndianPlateItems,
+  resolveActiveHotPlateMonth,
   resolveDayPrice,
-  sortMonthsChronologically,
   weekdayColumn,
   type HotPlateDayWithMeta,
   type HotPlateMonth,
@@ -23,8 +21,6 @@ interface HotPlateLiveBoardClientProps {
   headingPrefix: string;
   headingAccent: string;
   description: string;
-  ctaLabel: string;
-  menuPdfUrl?: string | null;
 }
 
 function weekdayBadge(day: HotPlateDayWithMeta): string {
@@ -213,6 +209,49 @@ function HolidayCard({ day }: { day: HotPlateDayWithMeta }) {
   );
 }
 
+function UnconfiguredDayCard({
+  weekdayShort,
+  dayNumber,
+}: {
+  weekdayShort: string;
+  dayNumber: number;
+}) {
+  const badge = `${weekdayShort.slice(0, 3).toUpperCase()} ${dayNumber}`;
+
+  return (
+    <article
+      className="relative flex h-full w-full min-w-0 flex-col overflow-hidden rounded-[18px] border border-dashed border-green-dark/20 bg-[linear-gradient(160deg,#f3efe6_0%,#ebe6db_55%,#e4dfd3_100%)] p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]"
+      aria-label={`${badge}: menu not posted yet`}
+    >
+      <div
+        className="pointer-events-none absolute -right-6 -bottom-8 h-24 w-24 rounded-full bg-green-dark/[0.04]"
+        aria-hidden
+      />
+      <div className="mb-1.5">
+        <span className="font-bricolage text-[10px] font-bold tracking-[0.14em] text-text-muted-2 uppercase">
+          {badge}
+        </span>
+      </div>
+
+      <div className="relative flex min-w-0 flex-1 flex-col justify-center gap-1 py-1">
+        <span className="inline-flex w-fit items-center gap-1 rounded-full bg-green-dark/8 px-2 py-0.5 font-bricolage text-[9px] font-extrabold tracking-[0.14em] text-green-dark/70 uppercase">
+          <span
+            className="h-1.5 w-1.5 rounded-full bg-green-dark/35"
+            aria-hidden
+          />
+          Soon
+        </span>
+        <h3 className="font-playfair text-[15px] leading-snug font-bold text-green-dark/75">
+          Coming soon
+        </h3>
+        <p className="font-hanken text-[11px] leading-snug text-text-muted-2">
+          Menu not posted yet
+        </p>
+      </div>
+    </article>
+  );
+}
+
 function DayCard({
   day,
   month,
@@ -222,6 +261,14 @@ function DayCard({
   month: HotPlateMonth;
   defaultPrice: string;
 }) {
+  if (day.isUnconfigured) {
+    return (
+      <UnconfiguredDayCard
+        weekdayShort={day.weekdayShort}
+        dayNumber={day.day}
+      />
+    );
+  }
   if (day.kind === "closed") {
     return <HolidayCard day={day} />;
   }
@@ -264,7 +311,7 @@ function WeekSection({
   month: HotPlateMonth;
   defaultPrice: string;
 }) {
-  // Always Mon–Sun columns so every week uses the same card width.
+  // Always Mon–Sun columns so every week lines up on the same weekday grid.
   const columns = Array.from({ length: 7 }, () => [] as HotPlateDayWithMeta[]);
   for (const day of week.days) {
     const col = weekdayColumn(new Date(month.year, month.month - 1, day.day));
@@ -275,36 +322,45 @@ function WeekSection({
     <section className="flex flex-col gap-3 lg:flex-row lg:items-stretch lg:gap-3">
       <WeekHeaderCard week={week} />
       <div className="grid min-w-0 flex-1 grid-cols-2 items-stretch gap-2 sm:grid-cols-3 md:grid-cols-7 md:gap-2">
-        {columns.map((entries, colIndex) => (
-          <div
-            key={`col-${colIndex}`}
-            className={`flex min-w-0 flex-col gap-2 ${
-              entries.length === 0 ? "hidden md:flex" : ""
-            }`}
-          >
-            {entries.map((day) => (
-              <div key={day.entryKey} className="flex min-h-0 min-w-0 flex-1">
-                <DayCard
-                  day={day}
-                  month={month}
-                  defaultPrice={defaultPrice}
-                />
-              </div>
-            ))}
-          </div>
-        ))}
+        {columns.map((entries, colIndex) => {
+          const isOutsideMonth = entries.length === 0;
+
+          return (
+            <div
+              key={`col-${colIndex}`}
+              className={`flex min-w-0 flex-col gap-2 ${
+                isOutsideMonth ? "hidden md:flex" : ""
+              }`}
+              aria-hidden={isOutsideMonth || undefined}
+            >
+              {isOutsideMonth ? (
+                // Invisible spacer keeps Sat/Sun under the same columns as other weeks.
+                <div className="min-h-[1px] flex-1" />
+              ) : (
+                entries.map((day) => (
+                  <div
+                    key={day.entryKey}
+                    className="flex min-h-0 min-w-0 flex-1"
+                  >
+                    <DayCard
+                      day={day}
+                      month={month}
+                      defaultPrice={defaultPrice}
+                    />
+                  </div>
+                ))
+              )}
+            </div>
+          );
+        })}
       </div>
     </section>
   );
 }
 
 function FooterLegend({
-  ctaLabel,
-  menuPdfUrl,
   sundayNote,
 }: {
-  ctaLabel: string;
-  menuPdfUrl?: string | null;
   sundayNote?: string;
 }) {
   const legendItems = [
@@ -325,6 +381,12 @@ function FooterLegend({
       icon: "alert",
       label: "Holiday",
       detail: "Deli closed / limited hours",
+    },
+    {
+      color: "bg-green-dark/25",
+      icon: "soon",
+      label: "Coming soon",
+      detail: "Menu not posted for that day yet",
     },
   ] as const;
 
@@ -356,6 +418,12 @@ function FooterLegend({
                       <path d="M12 8v5M12 16h.01" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
                     </svg>
                   )}
+                  {item.icon === "soon" && (
+                    <svg className="h-3 w-3 text-green-dark" viewBox="0 0 24 24" fill="none" aria-hidden>
+                      <circle cx="12" cy="12" r="7.5" stroke="currentColor" strokeWidth="2" />
+                      <path d="M12 8v4.5L15 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
                 </span>
                 <div>
                   <p className="font-bricolage text-[13px] font-bold text-green-dark">
@@ -374,20 +442,6 @@ function FooterLegend({
             </p>
           )}
         </div>
-
-        {menuPdfUrl && (
-          <a
-            href={menuPdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex w-full items-center justify-center gap-2.5 rounded-[20px] bg-green-dark px-8 py-4 font-bricolage text-[14px] font-bold tracking-wide text-cream no-underline shadow-[0_12px_32px_-12px_rgba(20,61,34,0.55)] transition-[background,transform] duration-200 hover:-translate-y-0.5 hover:bg-green-darker sm:w-auto"
-          >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            {ctaLabel}
-          </a>
-        )}
       </div>
     </div>
   );
@@ -400,28 +454,19 @@ export default function HotPlateLiveBoardClient({
   headingPrefix,
   headingAccent,
   description,
-  ctaLabel,
-  menuPdfUrl,
 }: HotPlateLiveBoardClientProps) {
-  const publishedMonths = useMemo(
-    () => sortMonthsChronologically(months.filter((m) => m.days.length > 0)),
+  // Always the real calendar month — never fall back to a past published month.
+  const selectedMonth = useMemo(
+    () => resolveActiveHotPlateMonth(months),
     [months],
   );
 
-  const selectedMonth = useMemo(() => {
-    if (publishedMonths.length === 0) return null;
-    const key = findCurrentMonthKey(publishedMonths);
-    return (
-      publishedMonths.find((m) => monthKey(m) === key) ?? publishedMonths[0]
-    );
-  }, [publishedMonths]);
-
   const weeks = useMemo(
-    () => (selectedMonth ? groupHotPlateByWeek(selectedMonth) : []),
+    () => groupHotPlateByWeek(selectedMonth),
     [selectedMonth],
   );
 
-  if (publishedMonths.length === 0 || !selectedMonth || weeks.length === 0) {
+  if (weeks.length === 0) {
     return null;
   }
 
@@ -445,11 +490,7 @@ export default function HotPlateLiveBoardClient({
         ))}
       </div>
 
-      <FooterLegend
-        ctaLabel={ctaLabel}
-        menuPdfUrl={menuPdfUrl}
-        sundayNote={selectedMonth.sundayNote}
-      />
+      <FooterLegend sundayNote={selectedMonth.sundayNote} />
     </div>
   );
 }

@@ -11,6 +11,10 @@ export interface HeroContent {
   heading_line2: string;
   heading_line3: string;
   subheadline: string;
+  float_badge_top: string;
+  float_badge_bottom: string;
+  seal_ring_text: string;
+  seal_center_text: string;
   image_url: string | null;
 }
 
@@ -55,6 +59,10 @@ export interface MenuCopyContent {
   hot_sandwiches_watermark: string;
   hot_sandwiches_heading: string;
   hot_sandwiches_subheading: string;
+  soups_category_id: string | null;
+  hot_sandwiches_category_id: string | null;
+  soups_item_ids: string[];
+  hot_sandwiches_item_ids: string[];
 }
 
 export interface HoursCopyContent {

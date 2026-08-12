@@ -92,11 +92,14 @@ const CHIP_CATEGORY_NAMES = new Set([
 ]);
 
 export default async function MenuSection() {
-  const [{ menu }, items] = await Promise.all([
-    getWebsiteContent(),
-    getWebsiteMenuItems(),
-  ]);
+  const { menu } = await getWebsiteContent();
   const menuCopy = menu.copy;
+  const items = await getWebsiteMenuItems({
+    soupsCategoryId: menuCopy.soups_category_id ?? null,
+    hotSandwichesCategoryId: menuCopy.hot_sandwiches_category_id ?? null,
+    soupsItemIds: menuCopy.soups_item_ids ?? [],
+    hotSandwichesItemIds: menuCopy.hot_sandwiches_item_ids ?? [],
+  });
 
   const hasBuildYourWay =
     items.breads.length > 0 ||
@@ -240,11 +243,9 @@ export default async function MenuSection() {
                   >
                     {h.price_display}
                   </span>
-                  <MenuItemHoverName
-                    name={h.name}
-                    imageUrl={h.image_url}
-                    className="relative mt-0.5 max-w-[74%] font-playfair text-[23px] font-bold"
-                  />
+                  <span className="relative mt-0.5 block max-w-[74%] font-playfair text-[23px] font-bold">
+                    {h.name}
+                  </span>
                   <p className="relative mt-2.5 font-hanken text-[15px] leading-snug text-text-muted">
                     {h.description}
                   </p>

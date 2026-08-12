@@ -18,11 +18,20 @@ export interface MenuApiItem {
   price: number;
   compare_at_price: number | null;
   is_available: boolean;
+  show_on_website: boolean;
   is_item_of_day: boolean;
   tags: string[];
   image_url: string | null;
   image_thumb_url: string | null;
   popularity_score: number;
+}
+
+export interface WebsiteMenuSectionBindings {
+  soupsCategoryId?: string | null;
+  hotSandwichesCategoryId?: string | null;
+  /** Empty / omitted = all website-visible items in the category. */
+  soupsItemIds?: string[] | null;
+  hotSandwichesItemIds?: string[] | null;
 }
 
 export interface WebsiteMenuMeat {

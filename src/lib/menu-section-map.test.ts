@@ -9,6 +9,7 @@ function item(
     description?: string | null;
     image_url?: string | null;
     image_thumb_url?: string | null;
+    show_on_website?: boolean;
   },
 ): MenuApiItem {
   return {
@@ -18,6 +19,7 @@ function item(
     description: partial.description ?? null,
     compare_at_price: null,
     is_available: true,
+    show_on_website: partial.show_on_website ?? true,
     is_item_of_day: false,
     tags: [],
     image_url: partial.image_url ?? null,
@@ -131,5 +133,135 @@ describe("mapMenuApiToWebsiteItems", () => {
 
     expect(result.breads).toEqual(["White"]);
     expect(result.addons).toEqual([{ name: "Bacon", price_display: "+$1.25" }]);
+  });
+
+  it("should_prefer_bound_category_ids_over_name_fallback_for_soups_and_hot_sandwiches", () => {
+    const cats: MenuApiCategory[] = [
+      { id: "c-hot", name: "Hot Sandwiches", display_order: 1, is_active: true },
+      { id: "c-soups", name: "Soups", display_order: 2, is_active: true },
+      { id: "c-special", name: "Lunch Specials", display_order: 3, is_active: true },
+    ];
+    const result = mapMenuApiToWebsiteItems(
+      cats,
+      [
+        item({
+          id: "1",
+          name: "Reuben",
+          price: 7.75,
+          categoryId: "c-hot",
+          categoryName: "Hot Sandwiches",
+        }),
+        item({
+          id: "2",
+          name: "Chili (12 oz)",
+          price: 4,
+          categoryId: "c-soups",
+          categoryName: "Soups",
+        }),
+        item({
+          id: "3",
+          name: "Daily Soup",
+          price: 5,
+          categoryId: "c-special",
+          categoryName: "Lunch Specials",
+        }),
+        item({
+          id: "4",
+          name: "Club",
+          price: 8,
+          categoryId: "c-special",
+          categoryName: "Lunch Specials",
+          description: "Turkey club",
+        }),
+      ],
+      {
+        soupsCategoryId: "c-special",
+        hotSandwichesCategoryId: "c-special",
+      },
+    );
+
+    expect(result.soup_sizes).toEqual(["Daily Soup", "Club"]);
+    expect(result.hot_sandwiches.map((h) => h.name)).toEqual(["Daily Soup", "Club"]);
+  });
+
+  it("should_exclude_items_with_show_on_website_false_from_soups_and_hot_sandwiches", () => {
+    const cats: MenuApiCategory[] = [
+      { id: "c-hot", name: "Hot Sandwiches", display_order: 1, is_active: true },
+      { id: "c-soups", name: "Soups", display_order: 2, is_active: true },
+    ];
+    const result = mapMenuApiToWebsiteItems(cats, [
+      item({
+        id: "1",
+        name: "Reuben",
+        price: 7.75,
+        categoryId: "c-hot",
+        categoryName: "Hot Sandwiches",
+        show_on_website: false,
+      }),
+      item({
+        id: "2",
+        name: "Hot Italian",
+        price: 7.75,
+        categoryId: "c-hot",
+        categoryName: "Hot Sandwiches",
+      }),
+      item({
+        id: "3",
+        name: "Hidden Chili",
+        price: 4,
+        categoryId: "c-soups",
+        categoryName: "Soups",
+        show_on_website: false,
+      }),
+      item({
+        id: "4",
+        name: "Chili (12 oz)",
+        price: 4,
+        categoryId: "c-soups",
+        categoryName: "Soups",
+      }),
+    ]);
+
+    expect(result.soup_sizes).toEqual(["Chili (12 oz)"]);
+    expect(result.hot_sandwiches.map((h) => h.name)).toEqual(["Hot Italian"]);
+  });
+
+  it("should_include_only_checked_item_ids_for_hot_sandwiches_when_provided", () => {
+    const cats: MenuApiCategory[] = [
+      { id: "c-hot", name: "Hot Sandwiches", display_order: 1, is_active: true },
+    ];
+    const result = mapMenuApiToWebsiteItems(
+      cats,
+      [
+        item({
+          id: "1",
+          name: "Reuben",
+          price: 7.75,
+          categoryId: "c-hot",
+          categoryName: "Hot Sandwiches",
+        }),
+        item({
+          id: "2",
+          name: "Hot Italian",
+          price: 7.75,
+          categoryId: "c-hot",
+          categoryName: "Hot Sandwiches",
+        }),
+        item({
+          id: "3",
+          name: "Miami Rascal",
+          price: 7.75,
+          categoryId: "c-hot",
+          categoryName: "Hot Sandwiches",
+          show_on_website: false,
+        }),
+      ],
+      {
+        hotSandwichesCategoryId: "c-hot",
+        hotSandwichesItemIds: ["1", "3"],
+      },
+    );
+
+    expect(result.hot_sandwiches.map((h) => h.name)).toEqual(["Reuben", "Miami Rascal"]);
   });
 });
