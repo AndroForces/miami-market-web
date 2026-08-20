@@ -100,3 +100,36 @@ export function computeWebsiteStatus(
     status_dot: statusDot,
   };
 }
+
+/**
+ * Admin store open/close toggle always wins over posted hours.
+ * - Closed → force CLOSED on the public site
+ * - Open → force OPEN on the public site
+ */
+export function applyStoreStatusOverride(
+  status: OpenStatusContent,
+  storeIsOpen: boolean,
+): OpenStatusContent {
+  if (!storeIsOpen) {
+    return {
+      ...status,
+      is_open_now: false,
+      sign_word: "CLOSED",
+      status_label: "Closed Right Now",
+      // Never surface the admin close reason on the public site.
+      status_sub: "Temporarily closed — check back soon.",
+      status_dot: "#D2452A",
+    };
+  }
+
+  if (status.is_open_now) return status;
+
+  return {
+    ...status,
+    is_open_now: true,
+    sign_word: "OPEN",
+    status_label: "Open Now",
+    status_sub: "We are open right now — come visit.",
+    status_dot: "#3DBE54",
+  };
+}

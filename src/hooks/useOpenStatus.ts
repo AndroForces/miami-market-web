@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import type { OpenStatusContent, StructuredHourRow } from "@/lib/cms";
-import { computeWebsiteStatus } from "@/lib/compute-website-status";
+import {
+  applyStoreStatusOverride,
+  computeWebsiteStatus,
+} from "@/lib/compute-website-status";
 import { fetchManualStoreClosure } from "@/lib/store-status";
 import type { OpenStatus } from "@/types/status.types";
 
@@ -30,24 +33,6 @@ function mapComputedStatus(status: OpenStatusContent): OpenStatus {
   };
 }
 
-/** Admin's manual store closure (Settings → close store) always wins over posted hours. */
-function applyManualClosure(
-  status: OpenStatus,
-  closure: { is_open: boolean; reason?: string } | null,
-): OpenStatus {
-  if (!closure || closure.is_open) return status;
-
-  return {
-    ...status,
-    statusOpen: false,
-    signWord: "CLOSED",
-    statusLabel: "Closed Right Now",
-    // Never surface the admin close reason on the public site.
-    statusSub: "Temporarily closed — check back soon.",
-    statusDot: "#D2452A",
-  };
-}
-
 export function useOpenStatus(
   structuredHours: StructuredHourRow[],
   initial: OpenStatusContent,
@@ -62,12 +47,27 @@ export function useOpenStatus(
     const update = async () => {
       const base =
         structuredHours.length > 0
-          ? mapComputedStatus(computeWebsiteStatus(structuredHours))
-          : mapServerStatus(initial);
+          ? computeWebsiteStatus(structuredHours)
+          : {
+              is_open_now: initial.is_open_now,
+              status_label: initial.status_label,
+              status_sub: initial.status_sub,
+              day_name: initial.day_name,
+              sign_word: initial.sign_word,
+              today_idx: initial.today_idx,
+              status_dot: initial.status_dot,
+            };
 
       const closure = await fetchManualStoreClosure();
       if (cancelled) return;
-      setStatus(applyManualClosure(base, closure));
+
+      // When the store-status API is unreachable, keep hours-based status.
+      const resolved =
+        closure === null
+          ? base
+          : applyStoreStatusOverride(base, closure.is_open);
+
+      setStatus(mapComputedStatus(resolved));
     };
 
     update();
