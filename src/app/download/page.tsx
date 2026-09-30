@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
 import AppQr from "@/components/AppQr";
+import DesktopModeStoreRedirect from "@/components/DesktopModeStoreRedirect"; // ← NEW
 import { ANDROID_URL, IOS_URL } from "@/lib/store-links";
 
 export const metadata: Metadata = {
@@ -13,6 +14,9 @@ export const metadata: Metadata = {
 export default function DownloadPage() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-cream font-hanken text-green-dark antialiased dark:bg-green-darker dark:text-cream">
+      {/* NEW: sends desktop-mode phones to the right store */}
+      <DesktopModeStoreRedirect />
+
       <Nav />
 
       <main className="mx-auto flex max-w-[720px] flex-col items-center px-4 py-14 text-center sm:px-6 sm:py-20">

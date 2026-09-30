@@ -60,10 +60,13 @@ function detectPlatform(
 function redirect(location: string): NextResponse {
   return new NextResponse(null, {
     status: 302,
-    headers: { Location: location, "Cache-Control": "no-store, max-age=0" },
+    headers: {
+      Location: location,
+      "Cache-Control": "private, no-store, max-age=0",
+      Vary: "User-Agent, Sec-CH-UA-Platform",
+    },
   });
 }
-
 /**
  * Smart store bridge for the QR code (/get-app).
  * - Android → Google Play listing (opens the Play Store app)
