@@ -17,7 +17,7 @@ export default async function Nav() {
   return (
     <header className="sticky top-0 z-60 border-b border-green-dark/12 bg-cream/90 backdrop-blur-md">
       <nav className="mx-auto flex max-w-[1240px] items-center justify-between gap-3 px-4 py-3 sm:gap-[18px] sm:px-6 sm:py-[13px]">
-        <a href="/#top" className="flex shrink-0 items-center no-underline">
+        <a href="/" className="flex shrink-0 items-center no-underline">
           <img
             src="/images/logo.png"
             alt="Miami Market"

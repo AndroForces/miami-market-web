@@ -7,7 +7,6 @@ export default async function Hero() {
 
   return (
     <section
-      id="top"
       className="relative mx-auto grid max-w-[1240px] grid-cols-1 items-center gap-10 px-4 pt-12 pb-6 sm:grid-cols-[repeat(auto-fit,minmax(280px,1fr))] sm:px-6 sm:pt-14"
     >
       <div>
