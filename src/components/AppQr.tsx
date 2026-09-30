@@ -2,24 +2,32 @@
 
 import { useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import {
-  GET_APP_PATH,
-  getConfiguredGetAppUrl,
-  isUnusableQrHost,
-} from "@/lib/store-links";
+import { ANDROID_APP_URL, GET_APP_PATH } from "@/lib/store-links";
 
 type AppQrProps = {
   size?: number;
-  /**
-   * Absolute URL to encode. Prefer passing from the server (Footer) so the QR
-   * never picks up 0.0.0.0 / localhost from the browser address bar.
-   */
+  /** Absolute URL to encode. Defaults to a phone-reachable `{origin}/get-app`. */
   value?: string;
+  /**
+   * Encode `market://…` so Android Camera opens Play Store directly
+   * (skips the smart /get-app page — Android-only).
+   */
+  directPlayStore?: boolean;
+  /** Hide PNG export; still shows a tiny URL caption so you can verify the target. */
   compact?: boolean;
   className?: string;
 };
 
-/** Best-effort LAN IPv4 for local-only fallback. */
+function isLoopbackHost(hostname: string): boolean {
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "[::1]" ||
+    hostname === "::1"
+  );
+}
+
+/** Best-effort LAN IPv4 via WebRTC so a phone on the same Wi‑Fi can hit the QR URL. */
 function discoverLanIpv4(): Promise<string | null> {
   return new Promise((resolve) => {
     const RTC =
@@ -53,13 +61,10 @@ function discoverLanIpv4(): Promise<string | null> {
       const match = /([0-9]{1,3}(?:\.[0-9]{1,3}){3})/.exec(candidate);
       if (!match) return;
       const ip = match[1];
-      if (
-        ip.startsWith("127.") ||
-        ip.startsWith("0.") ||
-        ip.startsWith("169.254.")
-      ) {
+      if (ip.startsWith("127.") || ip.startsWith("169.254.")) {
         return;
       }
+      // Prefer private LAN ranges
       if (
         ip.startsWith("10.") ||
         ip.startsWith("192.168.") ||
@@ -74,25 +79,16 @@ function discoverLanIpv4(): Promise<string | null> {
   });
 }
 
-async function resolveQrValue(explicit?: string): Promise<string> {
-  // 1) Explicit absolute URL from the server (Footer) — never trust 0.0.0.0
-  if (explicit) {
-    try {
-      const u = new URL(explicit);
-      if (!isUnusableQrHost(u.hostname)) return explicit;
-    } catch {
-      /* not absolute */
-    }
-  }
-
-  // 2) Build-time public site URL
-  const configured = getConfiguredGetAppUrl();
-  if (configured) return configured;
-
+async function resolveQrValue(
+  explicit: string | undefined,
+  directPlayStore: boolean,
+): Promise<string> {
+  if (explicit) return explicit;
+  if (directPlayStore) return ANDROID_APP_URL;
   if (typeof window === "undefined") return GET_APP_PATH;
 
   const { protocol, hostname, port } = window.location;
-  if (!isUnusableQrHost(hostname)) {
+  if (!isLoopbackHost(hostname)) {
     return `${window.location.origin}${GET_APP_PATH}`;
   }
 
@@ -102,13 +98,14 @@ async function resolveQrValue(explicit?: string): Promise<string> {
     return `${protocol}//${lan}${portPart}${GET_APP_PATH}`;
   }
 
-  // Never return http://0.0.0.0:... — phones cannot open it.
-  return GET_APP_PATH;
+  // Last resort — phone cannot open localhost; still encode something visible.
+  return `${window.location.origin}${GET_APP_PATH}`;
 }
 
 export default function AppQr({
   size = 220,
   value,
+  directPlayStore = false,
   compact = false,
   className,
 }: AppQrProps) {
@@ -118,13 +115,13 @@ export default function AppQr({
 
   useEffect(() => {
     let cancelled = false;
-    void resolveQrValue(value).then((next) => {
+    void resolveQrValue(value, directPlayStore).then((next) => {
       if (!cancelled) setQrValue(next);
     });
     return () => {
       cancelled = true;
     };
-  }, [value]);
+  }, [value, directPlayStore]);
 
   async function downloadPng(): Promise<void> {
     const svg = svgWrapRef.current?.querySelector("svg");
@@ -174,10 +171,8 @@ export default function AppQr({
   }
 
   const pad = compact ? "p-1" : "p-4";
-  const ready =
-    Boolean(qrValue) &&
-    qrValue !== GET_APP_PATH &&
-    !/0\.0\.0\.0|localhost|127\.0\.0\.1/.test(qrValue);
+  const ready = Boolean(qrValue) && qrValue !== GET_APP_PATH;
+  const isLocalhostTarget = /localhost|127\.0\.0\.1/.test(qrValue);
 
   if (!ready) {
     return (
@@ -215,14 +210,16 @@ export default function AppQr({
 
   if (compact) {
     return (
-      <a
-        href={qrValue}
-        aria-label="Scan or tap to get the Miami Market app"
-        className={`inline-flex shrink-0 no-underline ${className ?? ""}`}
-        title={qrValue}
-      >
-        {qrBlock}
-      </a>
+      <div className={`inline-flex flex-col items-center ${className ?? ""}`}>
+        <a
+          href={directPlayStore ? ANDROID_APP_URL : GET_APP_PATH}
+          aria-label="Scan or tap to get the Miami Market app"
+          className="inline-flex shrink-0 no-underline"
+          title={qrValue}
+        >
+          {qrBlock}
+        </a>
+      </div>
     );
   }
 
@@ -232,6 +229,12 @@ export default function AppQr({
       <p className="max-w-xs break-all text-center text-xs text-text-muted-2 dark:text-text-light/60">
         {qrValue}
       </p>
+      {isLocalhostTarget ? (
+        <p className="max-w-xs text-center text-xs font-semibold text-accent">
+          This QR points at localhost. A phone will open Chrome and fail — open
+          this site via your PC Wi‑Fi IP first, then scan.
+        </p>
+      ) : null}
       <button
         type="button"
         onClick={() => {

@@ -1,32 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
-import { headers } from "next/headers";
 import { getWebsiteContent } from "@/lib/cms";
 import AppQr from "@/components/AppQr";
-import {
-  getAppUrlFromRequestHost,
-  getConfiguredGetAppUrl,
-} from "@/lib/store-links";
-
-/**
- * Absolute /get-app URL for the QR — never 0.0.0.0 or localhost.
- * 1) NEXT_PUBLIC_SITE_URL (build-time)
- * 2) x-forwarded-host / host from the live request (nginx → beta.miami-market.com)
- */
-async function resolveFooterQrValue(): Promise<string | undefined> {
-  const configured = getConfiguredGetAppUrl();
-  if (configured) return configured;
-
-  const h = await headers();
-  const fromRequest = getAppUrlFromRequestHost(
-    h.get("x-forwarded-host") ?? h.get("host"),
-    h.get("x-forwarded-proto"),
-  );
-  return fromRequest ?? undefined;
-}
 
 export default async function Footer() {
   const { site, social_links: socialLinks } = await getWebsiteContent();
-  const qrValue = await resolveFooterQrValue();
 
   return (
     <footer className="bg-green-dark px-6 py-14 pb-10 text-text-light">
@@ -43,8 +20,13 @@ export default async function Footer() {
             {site.phone} · Fax {site.fax}
           </p>
         </div>
+        {/*
+          QR replaces the old Google Play pill in this cluster — same row as
+          social links, sized to the logo (58px) so footer height/width stay put.
+        */}
         <div className="flex flex-wrap items-center justify-center gap-3 md:justify-end md:pt-0">
-          <AppQr compact size={56} value={qrValue} />
+          {/* Smart QR → /get-app (Android → Play Store, iOS → App Store). */}
+          <AppQr compact size={56} />
           {socialLinks.map((s) => (
             <a
               key={s.label}

@@ -9,24 +9,59 @@ import {
 
 export const dynamic = "force-dynamic";
 
+type ScanPlatform = "android" | "ios" | "other";
+
+function logScan(platform: ScanPlatform, userAgent: string): void {
+  console.log({
+    timestamp: new Date().toISOString(),
+    platform,
+    userAgent,
+  });
+}
+
+function detectPlatform(
+  userAgent: string,
+  platformHint: string | null,
+): ScanPlatform {
+  if (platformHint && /android/i.test(platformHint)) return "android";
+  if (platformHint && /ios/i.test(platformHint)) return "ios";
+  if (/android/i.test(userAgent)) return "android";
+  if (/iPhone|iPad|iPod/i.test(userAgent)) return "ios";
+  if (/Macintosh/i.test(userAgent) && /Mobile/i.test(userAgent)) return "ios";
+  return "other";
+}
+
 /**
- * One QR → /get-app → correct store.
- * Platform is detected in the browser (not via server UA), because camera /
- * QR apps often omit "Android" / "iPhone" from the request User-Agent.
- *
- * Android → Play Store app (market://)
- * iOS → App Store (itms-apps://, then https://apps.apple.com)
- * Desktop → /download
+ * Smart store bridge for the footer QR (`/get-app`).
+ * - Android → Play Store app (`market://`)
+ * - iOS → App Store app (`itms-apps://` + https listing Safari hands off)
+ * - Other → `/download`
  */
 export function GET(req: NextRequest): NextResponse {
   const userAgent = req.headers.get("user-agent") ?? "";
-  console.log({
-    timestamp: new Date().toISOString(),
-    platform: "bridge",
-    userAgent,
-  });
+  const platformHint = req.headers.get("sec-ch-ua-platform");
+  const platform = detectPlatform(userAgent, platformHint);
+  logScan(platform, userAgent);
 
   const downloadUrl = new URL("/download", req.url).toString();
+
+  if (platform === "other") {
+    return NextResponse.redirect(new URL("/download", req.url), 302);
+  }
+
+  const isAndroid = platform === "android";
+
+  // Android: market:// opens Play Store app.
+  // iOS: itms-apps:// opens App Store; https://apps.apple.com is the Safari fallback
+  // (Camera → Safari often prefers https and still launches the App Store app).
+  const primaryHref = isAndroid ? ANDROID_APP_URL : IOS_APP_URL;
+  const primaryLabel = isAndroid ? "Open Play Store" : "Open App Store";
+  const secondaryHref = isAndroid ? ANDROID_URL : IOS_URL;
+  const secondaryLabel = isAndroid
+    ? "Open in Chrome instead"
+    : "Open App Store (Safari link)";
+
+  const autoRefreshUrl = isAndroid ? ANDROID_APP_URL : IOS_APP_URL;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -34,91 +69,81 @@ export function GET(req: NextRequest): NextResponse {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex" />
-  <title>Get Miami Market</title>
+  <meta http-equiv="refresh" content="0;url=${escapeHtml(autoRefreshUrl)}" />
+  <title>${primaryLabel}</title>
   <style>
     body {
-      margin: 0; min-height: 100vh; display: grid; place-items: center;
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
       font-family: system-ui, -apple-system, sans-serif;
-      background: #143d22; color: #faf4e8; text-align: center; padding: 24px;
+      background: #143d22;
+      color: #faf4e8;
+      text-align: center;
+      padding: 24px;
     }
+    .card { max-width: 360px; width: 100%; }
+    h1 { font-size: 1.5rem; margin: 0 0 10px; }
+    p { line-height: 1.5; margin: 0 0 20px; opacity: 0.9; }
     .btn {
-      display: block; width: 100%; max-width: 360px; box-sizing: border-box;
-      border-radius: 999px; padding: 18px 20px; font-size: 1.15rem; font-weight: 800;
-      text-decoration: none; background: #3dbe54; color: #0f2e1a; margin: 12px auto 0;
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 999px;
+      padding: 18px 20px;
+      font-size: 1.15rem;
+      font-weight: 800;
+      text-decoration: none;
+      margin: 0 0 12px;
+      background: #3dbe54;
+      color: #0f2e1a;
     }
     .btn-secondary {
-      background: transparent; color: #faf4e8;
-      border: 1px solid rgba(250,244,232,0.35); font-size: 0.95rem; padding: 14px 18px;
+      background: transparent;
+      color: #faf4e8;
+      border: 1px solid rgba(250,244,232,0.35);
+      font-size: 0.95rem;
+      padding: 14px 18px;
     }
-    a.muted { color: #cfe0d3; font-size: 0.85rem; }
   </style>
 </head>
 <body>
-  <div style="max-width:360px;width:100%">
-    <h1 style="margin:0 0 8px;font-size:1.4rem">Miami Market</h1>
-    <p id="msg" style="margin:0;opacity:0.9">Detecting your device&hellip;</p>
-    <a class="btn" id="primary" href="${escapeHtml(downloadUrl)}">Get the app</a>
-    <a class="btn btn-secondary" id="secondary" href="${escapeHtml(downloadUrl)}" style="display:none">Store listing</a>
-    <p style="margin-top:16px"><a class="muted" href="${escapeHtml(downloadUrl)}">All download options</a></p>
+  <div class="card">
+    <h1>Miami Market</h1>
+    <p>${
+      isAndroid
+        ? "Tap below to open the <strong>Play Store app</strong>."
+        : "Tap below to open the <strong>App Store</strong>."
+    }</p>
+    <a class="btn" id="storeBtn" href="${escapeHtml(primaryHref)}">${primaryLabel}</a>
+    <a class="btn btn-secondary" href="${escapeHtml(secondaryHref)}">${secondaryLabel}</a>
+    <p style="font-size:0.85rem;opacity:0.7;margin-top:8px"><a href="${escapeHtml(downloadUrl)}" style="color:#cfe0d3">All download options</a></p>
   </div>
   <script>
 (function () {
-  var MARKET = ${JSON.stringify(ANDROID_APP_URL)};
+  var PRIMARY = ${JSON.stringify(primaryHref)};
   var INTENT = ${JSON.stringify(ANDROID_INTENT_URL)};
-  var ANDROID_WEB = ${JSON.stringify(ANDROID_URL)};
-  var IOS_APP = ${JSON.stringify(IOS_APP_URL)};
-  var IOS_WEB = ${JSON.stringify(IOS_URL)};
-  var DOWNLOAD = ${JSON.stringify(downloadUrl)};
+  var IOS_HTTPS = ${JSON.stringify(IOS_URL)};
+  var isAndroid = ${isAndroid ? "true" : "false"};
 
-  var ua = navigator.userAgent || "";
-  var isAndroid = /android/i.test(ua);
-  var isIOS =
-    /iPhone|iPad|iPod/i.test(ua) ||
-    (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
-
-  var primary = document.getElementById("primary");
-  var secondary = document.getElementById("secondary");
-  var msg = document.getElementById("msg");
-
-  function openStore(url) {
-    try {
-      var iframe = document.createElement("iframe");
-      iframe.style.cssText = "display:none;width:0;height:0;border:0";
-      iframe.src = url;
-      document.body.appendChild(iframe);
-    } catch (e) {}
+  function openScheme(url) {
+    var iframe = document.createElement("iframe");
+    iframe.style.cssText = "display:none;width:0;height:0;border:0";
+    iframe.src = url;
+    document.body.appendChild(iframe);
     window.location.href = url;
   }
 
+  openScheme(PRIMARY);
   if (isAndroid) {
-    msg.textContent = "Opening Play Store\\u2026 Tap below if it does not open.";
-    primary.href = MARKET;
-    primary.textContent = "Open Play Store";
-    secondary.href = ANDROID_WEB;
-    secondary.textContent = "Open listing in browser";
-    secondary.style.display = "block";
-    openStore(MARKET);
-    setTimeout(function () { openStore(INTENT); }, 300);
-    return;
-  }
-
-  if (isIOS) {
-    msg.textContent = "Opening App Store\\u2026 Tap below if it does not open.";
-    // https://apps.apple.com is the most reliable Camera → Safari → App Store path.
-    // itms-apps:// is tried first to jump straight into the App Store app.
-    primary.href = IOS_WEB;
-    primary.textContent = "Open App Store";
-    secondary.href = IOS_APP;
-    secondary.textContent = "Open with App Store app";
-    secondary.style.display = "block";
-    openStore(IOS_APP);
+    setTimeout(function () { openScheme(INTENT); }, 300);
+  } else {
+    // If itms-apps is blocked, Safari https listing still opens App Store.
     setTimeout(function () {
-      if (!document.hidden) openStore(IOS_WEB);
-    }, 500);
-    return;
+      if (!document.hidden) openScheme(IOS_HTTPS);
+    }, 600);
   }
-
-  window.location.replace(DOWNLOAD);
 })();
   </script>
 </body>
