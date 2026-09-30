@@ -29,9 +29,23 @@ export const IOS_APP_URL = toItmsAppsUrl(IOS_URL);
 
 export const GET_APP_PATH = "/get-app";
 
+/** Hosts phones cannot reach — never put these in a QR. */
+export function isUnusableQrHost(hostname: string): boolean {
+  const host = hostname.replace(/:\d+$/, "").toLowerCase();
+  return (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "0.0.0.0" ||
+    host === "[::]" ||
+    host === "[::1]" ||
+    host === "::" ||
+    host === "::1"
+  );
+}
+
 /**
  * Public website origin for the QR (no trailing slash).
- * Required in production — never encode localhost / 0.0.0.0 into the QR.
+ * Set NEXT_PUBLIC_SITE_URL in infra/.env.* — baked in at build time.
  */
 export function getConfiguredSiteUrl(): string | null {
   const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim();
@@ -43,6 +57,23 @@ export function getConfiguredSiteUrl(): string | null {
 export function getConfiguredGetAppUrl(): string | null {
   const site = getConfiguredSiteUrl();
   return site ? `${site}${GET_APP_PATH}` : null;
+}
+
+/**
+ * Build an absolute /get-app URL from a request Host header (nginx sets
+ * x-forwarded-host). Rejects 0.0.0.0 / localhost so those never enter the QR.
+ */
+export function getAppUrlFromRequestHost(
+  hostHeader: string | null,
+  protoHeader: string | null,
+): string | null {
+  if (!hostHeader) return null;
+  const host = hostHeader.split(",")[0]?.trim() ?? "";
+  if (!host || isUnusableQrHost(host)) return null;
+  const proto =
+    (protoHeader?.split(",")[0]?.trim() || "https").replace(/:$/, "") ||
+    "https";
+  return `${proto}://${host}${GET_APP_PATH}`;
 }
 
 function toItmsAppsUrl(httpsUrl: string): string {

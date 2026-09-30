@@ -5,30 +5,21 @@ import { QRCodeSVG } from "qrcode.react";
 import {
   GET_APP_PATH,
   getConfiguredGetAppUrl,
+  isUnusableQrHost,
 } from "@/lib/store-links";
 
 type AppQrProps = {
   size?: number;
-  /** Absolute URL to encode. Defaults to configured site URL + /get-app. */
+  /**
+   * Absolute URL to encode. Prefer passing from the server (Footer) so the QR
+   * never picks up 0.0.0.0 / localhost from the browser address bar.
+   */
   value?: string;
   compact?: boolean;
   className?: string;
 };
 
-/** Hosts that phones can never reach — must not appear in the QR. */
-function isUnusableHost(hostname: string): boolean {
-  return (
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname === "0.0.0.0" ||
-    hostname === "[::]" ||
-    hostname === "[::1]" ||
-    hostname === "::1" ||
-    hostname === "::"
-  );
-}
-
-/** Best-effort LAN IPv4 so a phone on the same Wi‑Fi can open the QR URL. */
+/** Best-effort LAN IPv4 for local-only fallback. */
 function discoverLanIpv4(): Promise<string | null> {
   return new Promise((resolve) => {
     const RTC =
@@ -84,30 +75,35 @@ function discoverLanIpv4(): Promise<string | null> {
 }
 
 async function resolveQrValue(explicit?: string): Promise<string> {
-  if (explicit) return explicit;
+  // 1) Explicit absolute URL from the server (Footer) — never trust 0.0.0.0
+  if (explicit) {
+    try {
+      const u = new URL(explicit);
+      if (!isUnusableQrHost(u.hostname)) return explicit;
+    } catch {
+      /* not absolute */
+    }
+  }
 
-  // Production / staging: always use the configured public site URL.
+  // 2) Build-time public site URL
   const configured = getConfiguredGetAppUrl();
   if (configured) return configured;
 
   if (typeof window === "undefined") return GET_APP_PATH;
 
   const { protocol, hostname, port } = window.location;
-
-  // Real public or LAN hostname in the address bar — safe to encode.
-  if (!isUnusableHost(hostname)) {
+  if (!isUnusableQrHost(hostname)) {
     return `${window.location.origin}${GET_APP_PATH}`;
   }
 
-  // localhost / 0.0.0.0 — try LAN IP so phones on Wi‑Fi can connect.
   const lan = await discoverLanIpv4();
   if (lan) {
     const portPart = port ? `:${port}` : "";
     return `${protocol}//${lan}${portPart}${GET_APP_PATH}`;
   }
 
-  // Last resort (will not work on a phone) — still avoid encoding 0.0.0.0.
-  return `http://127.0.0.1${port ? `:${port}` : ""}${GET_APP_PATH}`;
+  // Never return http://0.0.0.0:... — phones cannot open it.
+  return GET_APP_PATH;
 }
 
 export default function AppQr({
@@ -178,8 +174,10 @@ export default function AppQr({
   }
 
   const pad = compact ? "p-1" : "p-4";
-  const ready = Boolean(qrValue) && qrValue !== GET_APP_PATH;
-  const isBadTarget = /localhost|127\.0\.0\.1|0\.0\.0\.0/.test(qrValue);
+  const ready =
+    Boolean(qrValue) &&
+    qrValue !== GET_APP_PATH &&
+    !/0\.0\.0\.0|localhost|127\.0\.0\.1/.test(qrValue);
 
   if (!ready) {
     return (
@@ -218,7 +216,7 @@ export default function AppQr({
   if (compact) {
     return (
       <a
-        href={GET_APP_PATH}
+        href={qrValue}
         aria-label="Scan or tap to get the Miami Market app"
         className={`inline-flex shrink-0 no-underline ${className ?? ""}`}
         title={qrValue}
@@ -234,13 +232,6 @@ export default function AppQr({
       <p className="max-w-xs break-all text-center text-xs text-text-muted-2 dark:text-text-light/60">
         {qrValue}
       </p>
-      {isBadTarget ? (
-        <p className="max-w-xs text-center text-xs font-semibold text-accent">
-          Set NEXT_PUBLIC_SITE_URL to your public website (e.g.
-          https://beta.miami-market.com). Phones cannot open 0.0.0.0 or
-          localhost.
-        </p>
-      ) : null}
       <button
         type="button"
         onClick={() => {

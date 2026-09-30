@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
 import AppQr from "@/components/AppQr";
-import { ANDROID_URL, IOS_URL } from "@/lib/store-links";
+import {
+  ANDROID_URL,
+  IOS_URL,
+  getAppUrlFromRequestHost,
+  getConfiguredGetAppUrl,
+} from "@/lib/store-links";
 
 export const metadata: Metadata = {
   title: "Get the App · Miami Market",
@@ -10,7 +16,17 @@ export const metadata: Metadata = {
     "Download the Miami Market app for Android or iOS — order pickup, earn loyalty points, and skip the line.",
 };
 
-export default function DownloadPage() {
+export default async function DownloadPage() {
+  const configured = getConfiguredGetAppUrl();
+  const h = await headers();
+  const qrValue =
+    configured ??
+    getAppUrlFromRequestHost(
+      h.get("x-forwarded-host") ?? h.get("host"),
+      h.get("x-forwarded-proto"),
+    ) ??
+    undefined;
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-cream font-hanken text-green-dark antialiased dark:bg-green-darker dark:text-cream">
       <Nav />
@@ -28,7 +44,7 @@ export default function DownloadPage() {
         </p>
 
         <div className="mt-10">
-          <AppQr />
+          <AppQr value={qrValue} />
         </div>
 
         <div className="mt-10 flex w-full max-w-md flex-col gap-3 sm:flex-row sm:justify-center">
