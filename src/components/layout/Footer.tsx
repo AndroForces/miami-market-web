@@ -26,7 +26,7 @@ export default async function Footer() {
         */}
         <div className="flex flex-wrap items-center justify-center gap-3 md:justify-end md:pt-0">
           {/* Smart QR → /get-app (Android → Play Store, iOS → App Store). */}
-          <AppQr compact size={56} />
+          <AppQr compact size={100} />
           {socialLinks.map((s) => (
             <a
               key={s.label}
