@@ -10,7 +10,7 @@ export const ANDROID_URL =
   process.env.NEXT_PUBLIC_ANDROID_URL ??
   `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE_ID}`;
 
-/** Opens the Play Store app on Android (encode this in QR for reliable scans). */
+/** Opens the Play Store app on Android. */
 export const ANDROID_APP_URL = `market://details?id=${ANDROID_PACKAGE_ID}`;
 
 /** Chrome Intent — second attempt if market:// is blocked. */
@@ -28,6 +28,22 @@ export const IOS_URL =
 export const IOS_APP_URL = toItmsAppsUrl(IOS_URL);
 
 export const GET_APP_PATH = "/get-app";
+
+/**
+ * Public website origin for the QR (no trailing slash).
+ * Required in production — never encode localhost / 0.0.0.0 into the QR.
+ */
+export function getConfiguredSiteUrl(): string | null {
+  const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (!raw) return null;
+  return raw.replace(/\/$/, "");
+}
+
+/** Absolute smart-QR target when SITE_URL is configured. */
+export function getConfiguredGetAppUrl(): string | null {
+  const site = getConfiguredSiteUrl();
+  return site ? `${site}${GET_APP_PATH}` : null;
+}
 
 function toItmsAppsUrl(httpsUrl: string): string {
   const match = httpsUrl.match(/id(\d+)/i);

@@ -34,15 +34,22 @@ The fallback page (`/download`) shows both store buttons and the same QR for pri
 
 **Change store links without reprinting the QR:** update `NEXT_PUBLIC_ANDROID_URL` / `NEXT_PUBLIC_IOS_URL` in `.env` (or defaults in `src/lib/store-links.ts`). The QR never points at the stores directly — only at `/get-app`.
 
-**Phone testing:** Footer QR encodes `/get-app` (uses your LAN IP when the site is opened on localhost). Same Wi‑Fi required. Flow:
+**Phone testing / production QR:** The QR must encode a URL phones can open.
 
-| Device | Result |
-|--------|--------|
-| Android | Play Store app (`market://`) |
-| iOS | App Store (`itms-apps://` + `https://apps.apple.com`) |
+| Environment | What the QR encodes |
+|-------------|---------------------|
+| Production | `{NEXT_PUBLIC_SITE_URL}/get-app` (set in `infra/.env.<env>`) |
+| Local | LAN IP `/get-app` (never `localhost` or `0.0.0.0`) |
+
+`0.0.0.0` is only a server bind address — it is **not** a URL phones can load. If you open the site as `http://0.0.0.0:3001`, Chrome on a phone will show “connection refused”.
+
+| Device | After `/get-app` |
+|--------|------------------|
+| Android | Play Store app |
+| iOS | App Store |
 | Desktop | `/download` |
 
-Set a real `NEXT_PUBLIC_IOS_URL` (App Store Connect listing id) or iOS opens App Store but may show “item not available”. Dev server binds `0.0.0.0`.
+Redeploy after setting `NEXT_PUBLIC_SITE_URL` (it is baked in at **build** time).
 
 **Print the QR:** open `/download` on the public website and use **Download PNG**.
 

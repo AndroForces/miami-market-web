@@ -2,22 +2,29 @@
 
 import { useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { GET_APP_PATH } from "@/lib/store-links";
+import {
+  GET_APP_PATH,
+  getConfiguredGetAppUrl,
+} from "@/lib/store-links";
 
 type AppQrProps = {
   size?: number;
-  /** Absolute URL to encode. Defaults to phone-reachable `{origin}/get-app`. */
+  /** Absolute URL to encode. Defaults to configured site URL + /get-app. */
   value?: string;
   compact?: boolean;
   className?: string;
 };
 
-function isLoopbackHost(hostname: string): boolean {
+/** Hosts that phones can never reach — must not appear in the QR. */
+function isUnusableHost(hostname: string): boolean {
   return (
     hostname === "localhost" ||
     hostname === "127.0.0.1" ||
+    hostname === "0.0.0.0" ||
+    hostname === "[::]" ||
     hostname === "[::1]" ||
-    hostname === "::1"
+    hostname === "::1" ||
+    hostname === "::"
   );
 }
 
@@ -55,7 +62,13 @@ function discoverLanIpv4(): Promise<string | null> {
       const match = /([0-9]{1,3}(?:\.[0-9]{1,3}){3})/.exec(candidate);
       if (!match) return;
       const ip = match[1];
-      if (ip.startsWith("127.") || ip.startsWith("169.254.")) return;
+      if (
+        ip.startsWith("127.") ||
+        ip.startsWith("0.") ||
+        ip.startsWith("169.254.")
+      ) {
+        return;
+      }
       if (
         ip.startsWith("10.") ||
         ip.startsWith("192.168.") ||
@@ -72,20 +85,29 @@ function discoverLanIpv4(): Promise<string | null> {
 
 async function resolveQrValue(explicit?: string): Promise<string> {
   if (explicit) return explicit;
+
+  // Production / staging: always use the configured public site URL.
+  const configured = getConfiguredGetAppUrl();
+  if (configured) return configured;
+
   if (typeof window === "undefined") return GET_APP_PATH;
 
   const { protocol, hostname, port } = window.location;
-  if (!isLoopbackHost(hostname)) {
+
+  // Real public or LAN hostname in the address bar — safe to encode.
+  if (!isUnusableHost(hostname)) {
     return `${window.location.origin}${GET_APP_PATH}`;
   }
 
+  // localhost / 0.0.0.0 — try LAN IP so phones on Wi‑Fi can connect.
   const lan = await discoverLanIpv4();
   if (lan) {
     const portPart = port ? `:${port}` : "";
     return `${protocol}//${lan}${portPart}${GET_APP_PATH}`;
   }
 
-  return `${window.location.origin}${GET_APP_PATH}`;
+  // Last resort (will not work on a phone) — still avoid encoding 0.0.0.0.
+  return `http://127.0.0.1${port ? `:${port}` : ""}${GET_APP_PATH}`;
 }
 
 export default function AppQr({
@@ -157,7 +179,7 @@ export default function AppQr({
 
   const pad = compact ? "p-1" : "p-4";
   const ready = Boolean(qrValue) && qrValue !== GET_APP_PATH;
-  const isLocalhostTarget = /localhost|127\.0\.0\.1/.test(qrValue);
+  const isBadTarget = /localhost|127\.0\.0\.1|0\.0\.0\.0/.test(qrValue);
 
   if (!ready) {
     return (
@@ -212,10 +234,11 @@ export default function AppQr({
       <p className="max-w-xs break-all text-center text-xs text-text-muted-2 dark:text-text-light/60">
         {qrValue}
       </p>
-      {isLocalhostTarget ? (
+      {isBadTarget ? (
         <p className="max-w-xs text-center text-xs font-semibold text-accent">
-          QR still points at localhost — open this site via your PC Wi‑Fi IP
-          (e.g. http://192.168.x.x:3001) so phones can reach /get-app.
+          Set NEXT_PUBLIC_SITE_URL to your public website (e.g.
+          https://beta.miami-market.com). Phones cannot open 0.0.0.0 or
+          localhost.
         </p>
       ) : null}
       <button
