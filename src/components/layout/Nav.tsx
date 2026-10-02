@@ -34,11 +34,18 @@ export default async function Nav() {
               {l.label}
             </a>
           ))}
+          
           <a
             href={site.phone_href}
             className="ml-0.5 shrink-0 whitespace-nowrap rounded-full bg-green px-3.5 py-2 text-[14px] font-bold text-white no-underline transition-[background,transform] duration-150 hover:-translate-y-px hover:bg-green-dark sm:ml-1.5 sm:px-[18px] sm:py-2.5 sm:text-[15px]"
           >
             {site.phone}
+          </a>
+          <a
+            href="/download"
+            className="ml-0.5 shrink-0 whitespace-nowrap rounded-full border border-green-dark/20 bg-white px-3.5 py-2 text-[14px] font-bold text-green-dark no-underline transition-colors duration-150 hover:bg-cream-dark sm:ml-1.5 sm:px-[18px] sm:py-2.5 sm:text-[15px]"
+          >
+            Get app
           </a>
         </div>
       </nav>
