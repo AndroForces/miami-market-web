@@ -14,10 +14,12 @@ export default function GalleryRevealGrid({ images }: GalleryRevealGridProps) {
       {images.map((image, index) => (
         <figure
           key={image.id}
-          className="gallery-shutter-tile mb-3.5 break-inside-avoid sm:mb-4 lg:mb-5"
-          style={{ animationDelay: `${(index % 6) * 60}ms` }}
+          className="mb-3.5 break-inside-avoid sm:mb-4 lg:mb-5"
         >
-          <div className="group relative overflow-hidden rounded-mm bg-cream-dark shadow-[0_10px_28px_-18px_rgba(20,61,34,0.55)]">
+          <div
+            className="gallery-shutter-tile group relative overflow-hidden rounded-mm bg-cream-dark shadow-[0_10px_28px_-18px_rgba(20,61,34,0.55)]"
+            style={{ animationDelay: `${(index % 6) * 60}ms` }}
+          >
             <img
               src={image.image_url}
               alt={image.caption || "Gallery photo"}
@@ -34,7 +36,7 @@ export default function GalleryRevealGrid({ images }: GalleryRevealGridProps) {
             />
           </div>
           {image.caption ? (
-            <figcaption className="mt-2.5 font-hanken text-[15px] leading-snug text-text-muted">
+            <figcaption className="mt-2.5 pb-0.5 font-hanken text-[15px] leading-normal text-text-muted">
               {image.caption}
             </figcaption>
           ) : null}
