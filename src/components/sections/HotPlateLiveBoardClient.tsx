@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   groupHotPlateByWeek,
   parseClosedDayMessage,
@@ -25,6 +25,37 @@ interface HotPlateLiveBoardClientProps {
 
 function weekdayBadge(day: HotPlateDayWithMeta): string {
   return `${day.weekdayShort.slice(0, 3).toUpperCase()} ${day.day}`;
+}
+
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+function hotPlateCalendarPngUrl(): string {
+  // Same-origin proxy avoids CORS and always hits the backend configured for this Next app.
+  return "/api/hot-plate-calendar/png";
+}
+
+async function downloadHotPlateCalendarPng(
+  year: number,
+  month: number,
+): Promise<void> {
+  const response = await fetch(hotPlateCalendarPngUrl(), {
+    method: "GET",
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw new Error("Failed to download calendar PNG");
+  }
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = `hot-plate-${year}-${pad2(month)}.png`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
 }
 
 function HeroSection({
@@ -52,6 +83,49 @@ function HeroSection({
       <p className="mt-4 max-w-[46ch] font-hanken text-[clamp(15px,1.6vw,18px)] leading-[1.55] text-text-muted">
         {description}
       </p>
+    </div>
+  );
+}
+
+function DownloadPngButton({
+  year,
+  month,
+}: {
+  year: number;
+  month: number;
+}) {
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
+  async function handleDownloadPng(): Promise<void> {
+    setDownloading(true);
+    setDownloadError(null);
+    try {
+      await downloadHotPlateCalendarPng(year, month);
+    } catch {
+      setDownloadError("Couldn’t download the calendar. Please try again.");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-center">
+      <button
+        type="button"
+        onClick={() => {
+          void handleDownloadPng();
+        }}
+        disabled={downloading}
+        className="inline-flex items-center gap-2 rounded-mm border-2 border-green-dark/25 bg-transparent px-[22px] py-[12px] font-bricolage text-[14px] font-bold text-green-dark transition-[border-color,background,transform] duration-150 hover:-translate-y-0.5 hover:border-green hover:bg-green/6 disabled:cursor-wait disabled:opacity-60"
+      >
+        {downloading ? "Preparing PNG…" : "Download PNG"}
+      </button>
+      {downloadError ? (
+        <p className="mt-2 font-hanken text-[13px] text-accent" role="alert">
+          {downloadError}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -360,8 +434,12 @@ function WeekSection({
 
 function FooterLegend({
   sundayNote,
+  year,
+  month,
 }: {
   sundayNote?: string;
+  year: number;
+  month: number;
 }) {
   const legendItems = [
     {
@@ -442,6 +520,7 @@ function FooterLegend({
             </p>
           )}
         </div>
+        <DownloadPngButton year={year} month={month} />
       </div>
     </div>
   );
@@ -490,7 +569,11 @@ export default function HotPlateLiveBoardClient({
         ))}
       </div>
 
-      <FooterLegend sundayNote={selectedMonth.sundayNote} />
+      <FooterLegend
+        sundayNote={selectedMonth.sundayNote}
+        year={selectedMonth.year}
+        month={selectedMonth.month}
+      />
     </div>
   );
 }
