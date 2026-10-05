@@ -94,6 +94,10 @@ export interface SiteSettingsContent {
   map_overlay_label: string;
   seo_title: string;
   seo_description: string;
+  /** Google Play listing URL from admin CMS. */
+  android_app_url: string;
+  /** App Store listing URL; empty = Coming soon. */
+  ios_app_url: string;
 }
 
 export interface NavLink {
@@ -241,6 +245,15 @@ export async function getHotPlateCalendar(): Promise<HotPlateMonth[]> {
   return mapHotPlateCalendarFromApi(body.data as HotPlateCalendarApi);
 }
 
+const DEFAULT_SITE_SETTINGS: Pick<
+  SiteSettingsContent,
+  "android_app_url" | "ios_app_url"
+> = {
+  android_app_url:
+    "https://play.google.com/store/apps/details?id=com.miamimarket.app",
+  ios_app_url: "",
+};
+
 export async function getSiteSettingsForMetadata(): Promise<SiteSettingsContent> {
   const res = await fetch(`${getBackendUrl()}/api/v1/web/site-settings`, {
     next: { revalidate: 60 },
@@ -251,7 +264,13 @@ export async function getSiteSettingsForMetadata(): Promise<SiteSettingsContent>
   }
 
   const body = await res.json();
-  return body.data as SiteSettingsContent;
+  const data = body.data as SiteSettingsContent;
+  return {
+    ...data,
+    android_app_url:
+      data.android_app_url ?? DEFAULT_SITE_SETTINGS.android_app_url,
+    ios_app_url: data.ios_app_url ?? DEFAULT_SITE_SETTINGS.ios_app_url,
+  };
 }
 
 export interface GalleryImage {

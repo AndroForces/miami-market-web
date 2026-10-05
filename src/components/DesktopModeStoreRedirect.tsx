@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { ANDROID_URL, IOS_URL, IOS_PUBLISHED } from "@/lib/store-links";
+import { isIosPublished } from "@/lib/store-links";
+
+type DesktopModeStoreRedirectProps = {
+  androidUrl: string;
+  iosUrl: string;
+};
 
 /**
  * Chrome "Desktop site" mode makes a phone send a Linux/Mac desktop User-Agent,
@@ -9,7 +14,10 @@ import { ANDROID_URL, IOS_URL, IOS_PUBLISHED } from "@/lib/store-links";
  * reports touch support and the real (small) screen size, so we detect the
  * phone here and send it to the right store.
  */
-export default function DesktopModeStoreRedirect() {
+export default function DesktopModeStoreRedirect({
+  androidUrl,
+  iosUrl,
+}: DesktopModeStoreRedirectProps) {
   useEffect(() => {
     const ua = navigator.userAgent;
     const isTouch = navigator.maxTouchPoints > 1;
@@ -17,18 +25,20 @@ export default function DesktopModeStoreRedirect() {
 
     // Android phone/tablet in desktop mode: UA says "X11; Linux x86_64".
     const isDesktopUaLinux =
-      /Linux/i.test(ua) && !/Android/i.test(ua) && !/Windows|Macintosh/i.test(ua);
-    if (isTouch && shortSide <= 820 && isDesktopUaLinux) {
-      window.location.replace(ANDROID_URL);
+      /Linux/i.test(ua) &&
+      !/Android/i.test(ua) &&
+      !/Windows|Macintosh/i.test(ua);
+    if (isTouch && shortSide <= 820 && isDesktopUaLinux && androidUrl) {
+      window.location.replace(androidUrl);
       return;
     }
 
     // iPhone in desktop mode (and iPadOS default): UA says "Macintosh".
     const isMacUaTouch = /Macintosh/i.test(ua) && isTouch;
-    if (isMacUaTouch && IOS_PUBLISHED) {
-      window.location.replace(IOS_URL);
+    if (isMacUaTouch && isIosPublished(iosUrl)) {
+      window.location.replace(iosUrl.trim());
     }
-  }, []);
+  }, [androidUrl, iosUrl]);
 
   return null;
 }

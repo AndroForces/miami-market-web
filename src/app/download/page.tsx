@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
 import AppQr from "@/components/AppQr";
-import DesktopModeStoreRedirect from "@/components/DesktopModeStoreRedirect"; // ← NEW
-import { ANDROID_URL, IOS_URL } from "@/lib/store-links";
+import DesktopModeStoreRedirect from "@/components/DesktopModeStoreRedirect";
+import { getSiteSettingsForMetadata } from "@/lib/cms";
+import { isIosPublished } from "@/lib/store-links";
 
 export const metadata: Metadata = {
   title: "Get the App · Miami Market",
@@ -11,11 +12,22 @@ export const metadata: Metadata = {
     "Download the Miami Market app for Android or iOS — order pickup, earn loyalty points, and skip the line.",
 };
 
-export default function DownloadPage() {
+/** Shared solid green pill — no border/outline so both store buttons match. */
+const storeButtonClassName =
+  "inline-flex h-12 min-h-12 flex-1 items-center justify-center gap-2 rounded-full border-0 bg-green px-4 text-[14px] font-bold leading-none whitespace-nowrap text-white no-underline shadow-none outline-none ring-0 transition-[background,transform] duration-150 hover:-translate-y-px hover:bg-green-dark sm:px-5 sm:text-[15px] dark:bg-green-open dark:text-green-darker dark:hover:bg-green-light";
+
+const storeButtonDisabledClassName =
+  "inline-flex h-12 min-h-12 flex-1 cursor-default items-center justify-center gap-2 rounded-full border-0 bg-green px-4 text-[14px] font-bold leading-none whitespace-nowrap text-white opacity-70 shadow-none outline-none ring-0 sm:px-5 sm:text-[15px] dark:bg-green-open dark:text-green-darker dark:opacity-70";
+
+export default async function DownloadPage() {
+  const site = await getSiteSettingsForMetadata();
+  const androidUrl = site.android_app_url?.trim() ?? "";
+  const iosUrl = site.ios_app_url?.trim() ?? "";
+  const iosReady = isIosPublished(iosUrl);
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-cream font-hanken text-green-dark antialiased dark:bg-green-darker dark:text-cream">
-      {/* NEW: sends desktop-mode phones to the right store */}
-      <DesktopModeStoreRedirect />
+      <DesktopModeStoreRedirect androidUrl={androidUrl} iosUrl={iosUrl} />
 
       <Nav />
 
@@ -35,37 +47,41 @@ export default function DownloadPage() {
           <AppQr />
         </div>
 
-        <div className="mt-10 flex w-full max-w-md flex-col gap-3 sm:flex-row sm:justify-center">
-          <a
-            href={ANDROID_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-green px-5 py-3.5 text-[15px] font-bold text-white no-underline transition-[background,transform] duration-150 hover:-translate-y-px hover:bg-green-dark dark:bg-green-open dark:text-green-darker dark:hover:bg-green-light"
-          >
-            <PlayStoreIcon />
-            Get it on Google Play
-          </a>
-          <a
-            href={IOS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-green-dark/20 bg-white px-5 py-3.5 text-[15px] font-bold text-green-dark no-underline transition-colors duration-150 hover:bg-cream-dark dark:border-cream/25 dark:bg-transparent dark:text-cream dark:hover:bg-cream/10"
-          >
-            <AppStoreIcon />
-            Download on the App Store
-          </a>
-        </div>
+        <div className="mt-10 flex w-full max-w-lg flex-col gap-3 sm:flex-row sm:items-stretch sm:justify-center">
+          {androidUrl ? (
+            <a
+              href={androidUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={storeButtonClassName}
+            >
+              <PlayStoreIcon />
+              <span>Get it on Google Play</span>
+            </a>
+          ) : (
+            <span className={storeButtonDisabledClassName}>
+              <PlayStoreIcon />
+              <span>Coming soon</span>
+            </span>
+          )}
 
-        <p className="mt-8 text-sm text-text-muted-2 dark:text-text-light/60">
-          Already on a phone? Open{" "}
-          <a
-            href="/get-app"
-            className="font-semibold text-green underline-offset-2 hover:underline dark:text-green-light"
-          >
-            /get-app
-          </a>{" "}
-          for an automatic store redirect.
-        </p>
+          {iosReady ? (
+            <a
+              href={iosUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={storeButtonClassName}
+            >
+              <AppStoreIcon />
+              <span>Download on the App Store</span>
+            </a>
+          ) : (
+            <span className={storeButtonDisabledClassName} aria-disabled="true">
+              <AppStoreIcon />
+              <span>Coming soon</span>
+            </span>
+          )}
+        </div>
       </main>
 
       <Footer />
@@ -109,7 +125,7 @@ function AppStoreIcon() {
       height="16"
       viewBox="0 0 24 24"
       aria-hidden="true"
-      className="shrink-0 fill-current"
+      className="shrink-0 fill-white dark:fill-green-darker"
     >
       <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
     </svg>

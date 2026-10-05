@@ -16,35 +16,20 @@ bun dev
 
 Open [http://localhost:3001](http://localhost:3001) with your browser to see the result.
 
-Copy `.env.example` to `.env` and set `NEXT_PUBLIC_BACKEND_URL` plus the store listing URLs.
+Copy `.env.example` to `.env` and set `NEXT_PUBLIC_BACKEND_URL` plus `NEXT_PUBLIC_SITE_URL`.
 
 ## Smart QR — Get the App
 
-The QR encodes `{current website origin}/get-app` (from `window.location.origin` — no site URL env var). That route serves a tiny bridge page that opens the **native store app** (not Chrome/Safari):
+The QR encodes `{NEXT_PUBLIC_SITE_URL}/get-app`. That page detects the device:
 
 | Device | Opens |
 |--------|--------|
-| Android | Play Store app via `market://` Intent (`com.miamimarket.app`) |
-| iPhone / iPad / iPod | App Store app via `itms-apps://` |
+| Android | Google Play listing URL from admin CMS |
+| iPhone / iPad / iPod with App Store URL | App Store listing |
+| iPhone / iPad / iPod with blank App Store URL | Coming soon page (no store buttons) |
 | Desktop / unknown | `/download` fallback page |
 
-HTTPS listing URLs (`NEXT_PUBLIC_ANDROID_URL` / `NEXT_PUBLIC_IOS_URL`) are only used as fallbacks and on `/download` buttons.
-
-The fallback page (`/download`) shows both store buttons and the same QR for print/scan.
-
-**Change store links without reprinting the QR:** update `NEXT_PUBLIC_ANDROID_URL` / `NEXT_PUBLIC_IOS_URL` in `.env` (or defaults in `src/lib/store-links.ts`). The QR never points at the stores directly — only at `/get-app`.
-
-**Phone testing:** The footer QR encodes a phone-reachable `/get-app` URL (LAN IP when you open the site on `localhost`). Same Wi‑Fi required. Flow:
-
-| Device | Result |
-|--------|--------|
-| Android | Play Store app (`market://`) |
-| iOS | App Store app (`itms-apps://` / App Store https link) |
-| Desktop | `/download` |
-
-Set a real `NEXT_PUBLIC_IOS_URL` (App Store listing with a real `id…`) or iOS opens App Store but shows “item not available”. Dev server binds `0.0.0.0` so phones can reach your PC.
-
-**Print the QR:** open `/download` on the public website and use **Download PNG**.
+**Change store links without reprinting the QR:** edit **Public Website → Contact & SEO → App store links** in the admin panel. Leave the iOS URL blank while the app is in review to show Coming soon. The QR never points at the stores directly — only at `/get-app`.
 
 ## Learn More
 
