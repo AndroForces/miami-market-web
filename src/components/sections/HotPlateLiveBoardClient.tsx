@@ -173,12 +173,14 @@ function MealCard({
         )}
       </div>
 
-      <div className="mt-1.5 border-t border-green-dark/6 pt-1.5">
-        <span className="inline-flex items-center gap-1 rounded-full bg-green-open/12 px-2.5 py-1 font-bricolage text-[10px] font-bold text-green-dark">
-          <span className="h-1.5 w-1.5 rounded-full bg-green-open" aria-hidden />
-          Available
-        </span>
-      </div>
+      {day.isToday ? (
+        <div className="mt-1.5 border-t border-green-dark/6 pt-1.5">
+          <span className="inline-flex items-center gap-1 rounded-full bg-green-open/12 px-2.5 py-1 font-bricolage text-[10px] font-bold text-green-dark">
+            <span className="h-1.5 w-1.5 rounded-full bg-green-open" aria-hidden />
+            Today
+          </span>
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -235,14 +237,16 @@ function IndianSpecialCard({
         )}
       </div>
 
-      <div className="mt-1.5 border-t border-white/10 pt-1.5">
-        <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 font-bricolage text-[10px] font-bold text-white">
-          <svg className="h-3 w-3 text-gold" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-            <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" />
-          </svg>
-          Available
-        </span>
-      </div>
+      {day.isToday ? (
+        <div className="mt-1.5 border-t border-white/10 pt-1.5">
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 font-bricolage text-[10px] font-bold text-white">
+            <svg className="h-3 w-3 text-gold" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+              <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" />
+            </svg>
+            Today
+          </span>
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -445,8 +449,8 @@ function FooterLegend({
     {
       color: "bg-green-open",
       icon: "check",
-      label: "Available",
-      detail: "Freshly prepared & ready to serve",
+      label: "Today",
+      detail: "What's on the hot plate right now",
     },
     {
       color: "bg-[#5c2780]",

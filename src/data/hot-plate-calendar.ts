@@ -243,6 +243,8 @@ export type HotPlateDayWithMeta = HotPlateDayEntry & {
   entryKey: string;
   /** True when this calendar day has no CMS menu entry. */
   isUnconfigured?: boolean;
+  /** True when this calendar day is the visitor's local today. */
+  isToday?: boolean;
 };
 
 export type HotPlateWeekGroup = {
@@ -495,6 +497,8 @@ export function groupHotPlateByWeek(
     });
     const entries = byDay.get(day);
 
+    const isToday = showToday && day === todayDay;
+
     if (!entries || entries.length === 0) {
       currentWeek.push({
         day,
@@ -504,6 +508,7 @@ export function groupHotPlateByWeek(
         dateLabel,
         entryKey: `${year}-${monthNum}-${day}-unconfigured`,
         isUnconfigured: true,
+        isToday,
       });
       continue;
     }
@@ -518,6 +523,7 @@ export function groupHotPlateByWeek(
         weekdayShort: names.short,
         dateLabel,
         entryKey: `${year}-${monthNum}-${day}-${index}`,
+        isToday,
       });
     }
   }

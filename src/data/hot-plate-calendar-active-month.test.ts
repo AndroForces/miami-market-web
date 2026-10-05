@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  groupHotPlateByWeek,
   resolveActiveHotPlateMonth,
   type HotPlateMonth,
 } from "@/data/hot-plate-calendar";
@@ -16,6 +17,36 @@ function month(
     days,
   };
 }
+
+describe("groupHotPlateByWeek isToday", () => {
+  it("should_mark_only_reference_date_as_today_when_reference_is_in_month", () => {
+    const october = month(2026, 10, [
+      { day: 5, items: "Chicken Pot Pie, Salad" },
+      { day: 6, items: "Meatloaf, Potatoes" },
+    ]);
+
+    const weeks = groupHotPlateByWeek(october, new Date(2026, 9, 5));
+    const allDays = weeks.flatMap((week) => week.days);
+    const todayDays = allDays.filter((day) => day.isToday);
+
+    expect(todayDays).toHaveLength(1);
+    expect(todayDays[0].day).toBe(5);
+    expect(allDays.find((day) => day.day === 6)?.isToday).toBe(false);
+  });
+
+  it("should_mark_no_days_as_today_when_reference_is_outside_month", () => {
+    const october = month(2026, 10, [
+      { day: 5, items: "Chicken Pot Pie, Salad" },
+    ]);
+
+    const weeks = groupHotPlateByWeek(october, new Date(2026, 8, 5)); // September
+    const todayDays = weeks
+      .flatMap((week) => week.days)
+      .filter((day) => day.isToday);
+
+    expect(todayDays).toHaveLength(0);
+  });
+});
 
 describe("resolveActiveHotPlateMonth", () => {
   it("should_return_active_month_meals_when_current_month_is_published", () => {
