@@ -148,7 +148,25 @@ export function mapMenuApiToWebsiteItems(
       }
     }
 
-    if (!CHIP_CATEGORIES.has(normalized)) {
+    const fillSoupsByName = !soupsBoundById && normalized === "soups";
+    const fillSoupsById = soupsBoundById && category.id === soupsCategoryId;
+    const fillsSoupsSection = fillSoupsByName || fillSoupsById;
+
+    const fillHotByName = !hotBoundById && normalized === "hot sandwiches";
+    const fillHotById = hotBoundById && category.id === hotSandwichesCategoryId;
+    const fillsHotSection = fillHotByName || fillHotById;
+
+    // Dedicated Soups / Hot Sandwiches sections own these categories — do not
+    // also list them in the deli priced grid (that looked like duplicates).
+    const isDedicatedSectionName =
+      normalized === "soups" || normalized === "hot sandwiches";
+
+    if (
+      !CHIP_CATEGORIES.has(normalized) &&
+      !isDedicatedSectionName &&
+      !fillsSoupsSection &&
+      !fillsHotSection
+    ) {
       categoryGroups.push({
         id: category.id,
         title: category.name,
@@ -156,15 +174,11 @@ export function mapMenuApiToWebsiteItems(
       });
     }
 
-    const fillSoupsByName = !soupsBoundById && normalized === "soups";
-    const fillSoupsById = soupsBoundById && category.id === soupsCategoryId;
-    if (fillSoupsByName || fillSoupsById) {
+    if (fillsSoupsSection) {
       result.soup_sizes.push(...pickSectionItems(rawCatItems, soupsItemIds).map((i) => i.name));
     }
 
-    const fillHotByName = !hotBoundById && normalized === "hot sandwiches";
-    const fillHotById = hotBoundById && category.id === hotSandwichesCategoryId;
-    if (fillHotByName || fillHotById) {
+    if (fillsHotSection) {
       for (const item of pickSectionItems(rawCatItems, hotItemIds)) {
         pushHotSandwich(result, item);
       }
@@ -174,16 +188,25 @@ export function mapMenuApiToWebsiteItems(
   for (const [categoryId, catItems] of itemsByCategoryId) {
     if (seenIds.has(categoryId) || catItems.length === 0) continue;
     const title = catItems[0]?.category.name ?? "Menu";
-    categoryGroups.push({
-      id: categoryId,
-      title,
-      items: catItems.map(toPricedItem),
-    });
+    const normalized = normalizeCategoryName(title);
+    const fillsSoupsSection = soupsBoundById && categoryId === soupsCategoryId;
+    const fillsHotSection =
+      hotBoundById && categoryId === hotSandwichesCategoryId;
+    const isDedicatedSectionName =
+      normalized === "soups" || normalized === "hot sandwiches";
 
-    if (soupsBoundById && categoryId === soupsCategoryId) {
+    if (!isDedicatedSectionName && !fillsSoupsSection && !fillsHotSection) {
+      categoryGroups.push({
+        id: categoryId,
+        title,
+        items: catItems.map(toPricedItem),
+      });
+    }
+
+    if (fillsSoupsSection) {
       result.soup_sizes.push(...pickSectionItems(catItems, soupsItemIds).map((i) => i.name));
     }
-    if (hotBoundById && categoryId === hotSandwichesCategoryId) {
+    if (fillsHotSection) {
       for (const item of pickSectionItems(catItems, hotItemIds)) {
         pushHotSandwich(result, item);
       }

@@ -63,7 +63,11 @@ export interface WebsiteMenuCategoryGroup {
 }
 
 export interface WebsiteMenuItems {
-  /** Every category from Menu API, in display_order (includes empty categories). */
+  /**
+   * Priced categories for the deli card, in display_order (includes empty).
+   * Excludes build-your-way chip categories and Soups / Hot Sandwiches
+   * (those render in dedicated sections).
+   */
   categories: WebsiteMenuCategoryGroup[];
   breads: string[];
   cheeses: string[];

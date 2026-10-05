@@ -55,11 +55,11 @@ describe("mapMenuApiToWebsiteItems", () => {
     ]);
 
     expect(result.categories.map((c) => c.title)).toEqual([
-      "Hot Sandwiches",
       "Deli Favorites",
       "Drinks",
       "Soft",
     ]);
+    expect(result.hot_sandwiches.map((h) => h.name)).toEqual(["Reuben"]);
     expect(result.categories.find((c) => c.title === "Drinks")?.items).toEqual([]);
     expect(result.categories.find((c) => c.title === "Soft")?.items).toEqual([]);
     expect(result.categories.find((c) => c.title === "Deli Favorites")?.items).toEqual([
@@ -96,6 +96,7 @@ describe("mapMenuApiToWebsiteItems", () => {
       }),
     ]);
 
+    expect(result.categories.map((c) => c.title)).toEqual([]);
     expect(result.soup_sizes).toEqual(["Chili (12 oz)"]);
     expect(result.hot_sandwiches).toEqual([
       {
@@ -182,6 +183,8 @@ describe("mapMenuApiToWebsiteItems", () => {
 
     expect(result.soup_sizes).toEqual(["Daily Soup", "Club"]);
     expect(result.hot_sandwiches.map((h) => h.name)).toEqual(["Daily Soup", "Club"]);
+    // Bound section source + name-matched Soups / Hot Sandwiches stay out of priced grid
+    expect(result.categories.map((c) => c.title)).toEqual([]);
   });
 
   it("should_exclude_items_with_show_on_website_false_from_soups_and_hot_sandwiches", () => {
